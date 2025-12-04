@@ -5,13 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import {
   Card,
   CardContent,
   CardDescription,
@@ -19,7 +12,6 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -37,7 +29,6 @@ import {
   Clock
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { MoyasarPayment } from '@/components/payment/moyasar-payment'
 import { DirectMoyasarCheckout } from '@/components/payment/direct-moyasar-checkout'
 
 interface RecordPaymentFormProps {
@@ -127,54 +118,6 @@ export function RecordPaymentForm({
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleMoyasarSuccess = async (payment: any) => {
-    try {
-      const { data, error } = await supabase
-        .from('payments')
-        .insert({
-          booking_id: bookingId,
-          amount: bookingAmount,
-          method: 'moyasar',
-          status: 'completed',
-          moyasar_payment_id: payment.id,
-          reference: payment.id,
-          notes: 'Payment via Moyasar link',
-        })
-        .select(`
-          id,
-          booking_id,
-          amount,
-          method,
-          status,
-          moyasar_payment_id,
-          reference,
-          notes,
-          created_at
-        `)
-        .single()
-
-      if (error) throw error
-
-      // Update booking paid amount
-      const { error: bookingError } = await supabase.rpc('update_booking_paid_amount', {
-        p_booking_id: bookingId
-      })
-
-      if (bookingError) throw bookingError
-
-      setPaymentId(data.id)
-      setPaymentStatus('completed')
-    } catch (error) {
-      console.error('Error recording Moyasar payment:', error)
-      alert('Failed to record payment. Please try again.')
-    }
-  }
-
-  const handleMoyasarError = (error: string) => {
-    console.error('Moyasar payment error:', error)
-    alert(`Moyasar payment failed: ${error}`)
   }
 
   const handleDownloadReceipt = () => {
@@ -310,103 +253,91 @@ Thank you for your payment.
   // If payment is recorded, show receipt
   if (paymentId && paymentStatus) {
     return (
-      <div className="space-y-6">
-        <div className={`border rounded-2xl p-5 ${
-          paymentStatus === 'completed' ? 'bg-green-50 border-green-200' :
-          paymentStatus === 'pending' ? 'bg-amber-50 border-amber-200' :
-          'bg-red-50 border-red-200'
+      <div className="space-y-4 max-w-2xl mx-auto w-full">
+        <div className={`p-4 rounded-lg ${
+          paymentStatus === 'completed' ? 'bg-green-100 text-green-800' :
+          paymentStatus === 'pending' ? 'bg-amber-100 text-amber-800' :
+          'bg-red-100 text-red-800'
         }`}>
           <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                paymentStatus === 'completed' ? 'bg-green-100' :
-                paymentStatus === 'pending' ? 'bg-amber-100' :
-                'bg-red-100'
-              }`}>
-                {paymentStatus === 'completed' ? (
-                  <CheckCircle className="h-6 w-6 text-green-600" />
-                ) : paymentStatus === 'pending' ? (
-                  <Clock className="h-6 w-6 text-amber-600" />
-                ) : (
-                  <AlertCircle className="h-6 w-6 text-red-600" />
-                )}
-              </div>
+            <div className="flex-shrink-0 mr-3">
+              {paymentStatus === 'completed' ? (
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              ) : paymentStatus === 'pending' ? (
+                <Clock className="h-6 w-6 text-amber-600" />
+              ) : (
+                <AlertCircle className="h-6 w-6 text-red-600" />
+              )}
             </div>
-            <div className="ml-4">
-              <h3 className={`text-lg font-semibold ${
-                paymentStatus === 'completed' ? 'text-green-800' :
-                paymentStatus === 'pending' ? 'text-amber-800' :
-                'text-red-800'
-              }`}>
+            <div>
+              <h3 className="font-semibold">
                 {paymentStatus === 'completed' ? 'Payment Recorded Successfully!' :
                  paymentStatus === 'pending' ? 'Payment Pending' :
                  'Payment Failed'}
               </h3>
-              <div className="mt-2">
+              <div className="mt-1">
                 {paymentStatus === 'completed' && (
-                  <p className="text-green-700">Payment ID: {paymentId.substring(0, 8)}...</p>
+                  <p>Payment ID: {paymentId.substring(0, 8)}...</p>
                 )}
                 {paymentStatus === 'pending' && (
-                  <p className="text-amber-700">
+                  <p>
                     {paymentMethod === 'bank' ? 'Bank transfer pending confirmation' : 'Payment link sent to customer'}
                   </p>
                 )}
                 {paymentStatus !== 'completed' && paymentStatus !== 'pending' && (
-                  <p className="text-red-700">Please try again or contact support</p>
+                  <p>Please try again or contact support</p>
                 )}
               </div>
             </div>
           </div>
         </div>
 
-        <Card className="border-0 bg-gradient-to-br from-slate-50 to-slate-100 shadow-lg">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-xl">
-              Payment Receipt
-            </CardTitle>
-            <CardDescription>Transaction details and receipt</CardDescription>
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle className="text-lg">Payment Receipt</CardTitle>
+            <CardDescription>Transaction details</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white p-4 rounded-lg border">
-                <p className="text-xs text-muted-foreground">Guest</p>
-                <p className="font-medium truncate">{guestName}</p>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Guest</p>
+                <p className="font-medium">{guestName}</p>
               </div>
-              <div className="bg-white p-4 rounded-lg border">
-                <p className="text-xs text-muted-foreground">Booking ID</p>
+              <div>
+                <p className="text-sm text-muted-foreground">Booking ID</p>
                 <p className="font-medium">{bookingId.substring(0, 8)}...</p>
               </div>
-              <div className="bg-white p-4 rounded-lg border">
-                <p className="text-xs text-muted-foreground">Check-in</p>
+              <div>
+                <p className="text-sm text-muted-foreground">Check-in</p>
                 <p className="font-medium">{new Date(checkIn).toLocaleDateString()}</p>
               </div>
-              <div className="bg-white p-4 rounded-lg border">
-                <p className="text-xs text-muted-foreground">Check-out</p>
+              <div>
+                <p className="text-sm text-muted-foreground">Check-out</p>
                 <p className="font-medium">{new Date(checkOut).toLocaleDateString()}</p>
               </div>
             </div>
 
-            <div className="p-5 bg-white rounded-xl border-2 border-slate-200">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <div className="border rounded-lg p-4 mb-4">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-2 mb-3">
                 <div>
                   <p className="text-sm text-muted-foreground">Amount Paid</p>
-                  <p className="text-3xl font-bold text-blue-600">{currency} {amount}</p>
+                  <p className="text-2xl font-bold">{currency} {amount}</p>
                 </div>
-                <Badge variant="outline" className="text-lg px-4 py-2">
+                <Badge>
                   {paymentMethod === 'card' ? 'Card Transaction' :
                    paymentMethod === 'bank' ? 'Bank Transfer' :
                    'Payment Link'}
                 </Badge>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {reference && (
-                  <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                  <div className="flex justify-between">
                     <p className="text-sm text-muted-foreground">Reference</p>
-                    <p className="text-sm font-medium">{reference}</p>
+                    <p className="text-sm">{reference}</p>
                   </div>
                 )}
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between">
                   <p className="text-sm text-muted-foreground">Status</p>
                   <Badge variant={paymentStatus === 'completed' ? 'default' :
                                 paymentStatus === 'pending' ? 'secondary' : 'destructive'}>
@@ -416,16 +347,16 @@ Thank you for your payment.
               </div>
             </div>
           </CardContent>
-          <CardFooter className="flex flex-wrap gap-2 justify-center sm:justify-start">
-            <Button variant="outline" size="sm" onClick={handleDownloadReceipt} className="flex-1 min-w-[120px]">
+          <CardFooter className="flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={handleDownloadReceipt}>
               <Download className="h-4 w-4 mr-2" />
               Download
             </Button>
-            <Button variant="outline" size="sm" onClick={handlePrintReceipt} className="flex-1 min-w-[120px]">
+            <Button variant="outline" size="sm" onClick={handlePrintReceipt}>
               <Printer className="h-4 w-4 mr-2" />
               Print
             </Button>
-            <Button variant="outline" size="sm" onClick={handleShareReceipt} className="flex-1 min-w-[120px]">
+            <Button variant="outline" size="sm" onClick={handleShareReceipt}>
               <Share2 className="h-4 w-4 mr-2" />
               Share
             </Button>
@@ -436,60 +367,46 @@ Thank you for your payment.
   }
 
   return (
-    <div className="w-full">
-      <div className="mb-6">
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-slate-800">Process Payment</h2>
-          <p className="text-slate-600 mt-1">Select a payment method for booking {bookingId.substring(0, 8)}...</p>
-        </div>
+    <div className="w-full max-w-lg mx-auto">
+      <div className="mb-4 text-center">
+        <h2 className="text-xl font-bold">Process Payment</h2>
+        <p className="text-muted-foreground text-sm">Booking {bookingId.substring(0, 8)}...</p>
+      </div>
 
-        <div className="text-center pb-4">
-          <div className="inline-flex items-center bg-blue-50 px-4 py-2 rounded-full border border-blue-200">
-            <span className="text-sm font-medium text-blue-800">Total Amount:</span>
-            <span className="ml-2 text-xl font-bold text-blue-600">{currency} {bookingAmount.toFixed(2)}</span>
-          </div>
+      <div className="text-center mb-4">
+        <div className="inline-flex items-center bg-primary/10 px-3 py-1 rounded-full border">
+          <span className="text-sm text-primary font-medium">Total Amount:</span>
+          <span className="ml-2 text-lg font-bold text-primary">{currency} {bookingAmount.toFixed(2)}</span>
         </div>
       </div>
 
       <Tabs value={paymentMethod} onValueChange={(v: any) => setPaymentMethod(v)} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6 bg-slate-100 p-1 rounded-xl">
-          <TabsTrigger
-            value="bank"
-            className="flex items-center justify-center data-[state=active]:bg-white data-[state=active]:text-slate-900 py-3 rounded-lg"
-          >
+        <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsTrigger value="bank">
             <Banknote className="h-4 w-4 mr-2" />
-            Bank Transfer
+            Bank
           </TabsTrigger>
-          <TabsTrigger
-            value="card"
-            className="flex items-center justify-center data-[state=active]:bg-white data-[state=active]:text-slate-900 py-3 rounded-lg"
-          >
+          <TabsTrigger value="card">
             <CreditCard className="h-4 w-4 mr-2" />
-            Card Transaction
+            Card
           </TabsTrigger>
-          <TabsTrigger
-            value="link"
-            className="flex items-center justify-center data-[state=active]:bg-white data-[state=active]:text-slate-900 py-3 rounded-lg"
-          >
+          <TabsTrigger value="link">
             <LinkIcon className="h-4 w-4 mr-2" />
-            Payment Link
+            Link
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="bank" className="space-y-4 pt-4">
-          <Card className="border-0 bg-slate-50 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2">
-                <Banknote className="h-5 w-5 text-blue-600" />
-                Bank Transfer Details
-              </CardTitle>
+        <TabsContent value="bank" className="space-y-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Bank Transfer</CardTitle>
               <CardDescription>Record a bank transfer payment</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="amount">Amount ({currency})</Label>
+            <CardContent className="space-y-3">
+              <div>
+                <Label htmlFor="bank-amount">Amount ({currency})</Label>
                 <Input
-                  id="amount"
+                  id="bank-amount"
                   type="number"
                   step="0.01"
                   value={amount}
@@ -499,47 +416,44 @@ Thank you for your payment.
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="reference">Reference/Transaction ID</Label>
+              <div>
+                <Label htmlFor="bank-reference">Reference/Transaction ID</Label>
                 <Input
-                  id="reference"
+                  id="bank-reference"
                   value={reference}
                   onChange={(e) => setReference(e.target.value)}
                   placeholder="Bank transaction reference, etc."
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
+              <div>
+                <Label htmlFor="bank-notes">Notes</Label>
                 <Input
-                  id="notes"
+                  id="bank-notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Additional details about the bank transfer..."
+                  placeholder="Additional details..."
                 />
               </div>
 
-              <Button type="button" onClick={handleSubmit} className="w-full mt-4" disabled={loading}>
+              <Button type="button" onClick={handleSubmit} className="w-full" disabled={loading}>
                 {loading ? 'Recording Payment...' : 'Record Bank Transfer'}
               </Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="card" className="space-y-4 pt-4">
-          <Card className="border-0 bg-slate-50 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-blue-600" />
-                Card Transaction
-              </CardTitle>
+        <TabsContent value="card" className="space-y-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Card Transaction</CardTitle>
               <CardDescription>Record a card transaction payment</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="amount">Amount ({currency})</Label>
+            <CardContent className="space-y-3">
+              <div>
+                <Label htmlFor="card-amount">Amount ({currency})</Label>
                 <Input
-                  id="amount"
+                  id="card-amount"
                   type="number"
                   step="0.01"
                   value={amount}
@@ -549,73 +463,57 @@ Thank you for your payment.
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="reference">Reference</Label>
+              <div>
+                <Label htmlFor="card-reference">Reference</Label>
                 <Input
-                  id="reference"
+                  id="card-reference"
                   value={reference}
                   onChange={(e) => setReference(e.target.value)}
                   placeholder="Card transaction ID, etc."
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
+              <div>
+                <Label htmlFor="card-notes">Notes</Label>
                 <Input
-                  id="notes"
+                  id="card-notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Additional details about the card transaction..."
+                  placeholder="Additional details..."
                 />
               </div>
 
-              <Button type="button" onClick={handleSubmit} className="w-full mt-4" disabled={loading}>
+              <Button type="button" onClick={handleSubmit} className="w-full" disabled={loading}>
                 {loading ? 'Recording Payment...' : 'Record Card Payment'}
               </Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="link" className="space-y-4 pt-4">
-          <Card className="border-0 bg-slate-50 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2">
-                <LinkIcon className="h-5 w-5 text-blue-600" />
-                Payment Link
-              </CardTitle>
+        <TabsContent value="link" className="space-y-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Payment Link</CardTitle>
               <CardDescription>
-                Create a payment link using Moyasar to send to your customer
+                Create a payment link using Moyasar
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
-                  <LinkIcon className="h-4 w-4" />
-                  Payment Link Details
-                </h4>
-                <p className="text-sm text-blue-700">
-                  Create a secure payment link using Moyasar. The customer will be redirected to complete the payment securely.
-                </p>
-              </div>
-
-              <div className="pt-4">
-                <DirectMoyasarCheckout
-                  bookingId={bookingId}
-                  amount={bookingAmount}
-                  currency={currency}
-                  guestName={guestName}
-                  description={`Payment for booking #${bookingId.substring(0, 8)}`}
-                  onComplete={(paymentId) => {
-                    // This will be handled by the webhook, but we can provide feedback to the user
-                    setPaymentId(paymentId);
-                    setPaymentStatus('pending'); // Payment will be pending until webhook confirms
-                  }}
-                  onError={(error) => {
-                    console.error('Moyasar checkout error:', error);
-                    alert(`Payment checkout failed: ${error}`);
-                  }}
-                />
-              </div>
+            <CardContent>
+              <DirectMoyasarCheckout
+                bookingId={bookingId}
+                amount={bookingAmount}
+                currency={currency}
+                guestName={guestName}
+                description={`Payment for booking #${bookingId.substring(0, 8)}`}
+                onComplete={(paymentId) => {
+                  setPaymentId(paymentId);
+                  setPaymentStatus('pending'); // Payment will be pending until webhook confirms
+                }}
+                onError={(error) => {
+                  console.error('Moyasar checkout error:', error);
+                  alert(`Payment checkout failed: ${error}`);
+                }}
+              />
             </CardContent>
           </Card>
         </TabsContent>
