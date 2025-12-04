@@ -1,24 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import {
-  Calendar,
-  CreditCard,
-  Download,
-  Printer,
-  Share2,
-  TrendingDown,
-  TrendingUp,
-  Search,
-  Filter,
-  FileText
-} from 'lucide-react';
+import { Printer, Download, FileText, TrendingDown, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
-import { BillingEntryForm } from './billing-entry-form';
+import { formatCurrency } from '@/lib/utils';
 
 interface Booking {
   id: string;
@@ -72,7 +61,31 @@ interface InvoiceItem {
   created_at: string;
 }
 
-interface InvoiceItemProps {
+interface Billing {
+  id: string;
+  hotel_id: string;
+  booking_id: string;
+  category: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total_amount: number;
+  date: string;
+  created_at: string;
+}
+
+interface Receipt {
+  id: string;
+  hotel_id: string;
+  billing_id: string;
+  booking_id: string;
+  amount: number;
+  payment_method: string;
+  remarks: string;
+  created_at: string;
+}
+
+interface BillingReportsClientProps {
   hotelId: string;
   currency: string;
   startDate: string;
@@ -81,18 +94,26 @@ interface InvoiceItemProps {
   payments: Payment[];
   invoices: Invoice[];
   invoiceItems: InvoiceItem[];
+  billings: Billing[];
+  receipts: Receipt[];
+  billingCategories: Record<string, number>;
 }
 
-export default function BillingReportsClient({ 
-  hotelId, 
-  currency, 
-  startDate, 
-  endDate, 
-  bookings, 
-  payments, 
-  invoices, 
-  invoiceItems 
-}: InvoiceItemProps) {
+export default function BillingReportsClient({
+  hotelId,
+  currency,
+  startDate,
+  endDate,
+  bookings,
+  payments,
+  invoices,
+  invoiceItems,
+  billings,
+  receipts,
+  billingCategories
+}: BillingReportsClientProps) {
+  const printRef = useRef<HTMLDivElement>(null);
+
   // Calculate statistics
   const totalRevenue = payments
     .filter(p => p.status === "completed")
@@ -109,6 +130,13 @@ export default function BillingReportsClient({
   const pendingPayments = payments.filter(p => p.status === "pending").length;
   const failedPayments = payments.filter(p => p.status === "failed").length;
 
+  // Calculate billing statistics
+  const totalBillings = billings?.length || 0;
+  const totalBillingRevenue = billings?.reduce((sum, bill) => sum + bill.total_amount, 0) || 0;
+  
+  const totalReceipts = receipts?.length || 0;
+  const totalReceiptRevenue = receipts?.reduce((sum, receipt) => sum + receipt.amount, 0) || 0;
+
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), "MMM dd, yyyy");
   };
@@ -122,73 +150,109 @@ export default function BillingReportsClient({
     window.print();
   };
 
-  // Handle download as PDF functionality
+  // Handle PDF download using browser print functionality
   const handleDownloadPDF = () => {
-    window.print();
-  };
-
-  // Handle download as CSV functionality
-  const handleDownloadCSV = () => {
-    // Create CSV content for invoices
-    const headers = ['Invoice Number', 'Date', 'Amount', 'Status', 'Guest'];
-    const rows = (invoices || []).map(invoice => {
-      return [
-        invoice.invoice_number,
-        formatDate(invoice.created_at),
-        invoice.total_amount,
-        invoice.status,
-        'N/A' // Guest information would need to be joined
-      ];
-    });
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
-
-    // Create and download CSV file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `billing-reports-${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Handle share functionality
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: 'Billing Reports',
-        text: `Billing reports for hotel from ${startDate} to ${endDate}`,
-        url: window.location.href
-      }).catch(console.error);
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      alert('Report URL copied to clipboard!');
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Billing Reports</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              th { background-color: #f2f2f2; }
+              .header { text-align: center; margin-bottom: 20px; }
+              .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+              .stat-card { border: 1px solid #ddd; padding: 10px; text-align: center; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>Billing Reports</h1>
+              <p>Period: ${format(new Date(startDate), "MMM dd, yyyy")} to ${format(new Date(endDate), "MMM dd, yyyy")}</p>
+            </div>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <h3>Total Revenue</h3>
+                <p>${formatCurrency(totalInvoiceRevenue + totalBillingRevenue, currency)}</p>
+                <small>Total from invoices & billings</small>
+              </div>
+              <div class="stat-card">
+                <h3>Total Billings</h3>
+                <p>${totalBillings}</p>
+                <small>Billings created</small>
+              </div>
+              <div class="stat-card">
+                <h3>Billing Revenue</h3>
+                <p>${formatCurrency(totalBillingRevenue, currency)}</p>
+                <small>Revenue from billings</small>
+              </div>
+              <div class="stat-card">
+                <h3>Receipts</h3>
+                <p>${totalReceipts}</p>
+                <small>Receipts created</small>
+              </div>
+            </div>
+            <h2>Billings</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Category</th>
+                  <th>Description</th>
+                  <th>Quantity</th>
+                  <th>Unit Price</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${billings.map(billing => `
+                  <tr>
+                    <td>${format(new Date(billing.date), "MMM dd, yyyy")}</td>
+                    <td>${billing.category}</td>
+                    <td>${billing.description}</td>
+                    <td>${billing.quantity}</td>
+                    <td>${formatCurrency(billing.unit_price, currency)}</td>
+                    <td>${formatCurrency(billing.total_amount, currency)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            <h2>Receipts</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Method</th>
+                  <th>Remarks</th>
+                  <th>Billing ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${receipts.map(receipt => `
+                  <tr>
+                    <td>${format(new Date(receipt.created_at), "MMM dd, yyyy")}</td>
+                    <td>${formatCurrency(receipt.amount, currency)}</td>
+                    <td>${receipt.payment_method}</td>
+                    <td>${receipt.remarks}</td>
+                    <td>${receipt.billing_id?.substring(0, 8)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
     }
   };
-
-  // Handle entry added callback
-  const [reloadTrigger, setReloadTrigger] = useState(0);
-
-  const handleEntryAdded = () => {
-    setReloadTrigger(prev => prev + 1); // Trigger a re-render to update data
-  };
-
-  useEffect(() => {
-    if (reloadTrigger > 0) {
-      // Instead of window.location.reload(), we could implement a more elegant solution
-      // For now, this will cause a page refresh when an entry is added
-      window.location.reload();
-    }
-  }, [reloadTrigger]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={printRef}>
       {/* Header with action buttons */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -204,14 +268,6 @@ export default function BillingReportsClient({
             <Download className="h-4 w-4" />
             PDF
           </Button>
-          <Button variant="outline" size="sm" onClick={handleDownloadCSV} className="flex items-center gap-2">
-            <Download className="h-4 w-4" />
-            CSV
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleShare} className="flex items-center gap-2">
-            <Share2 className="h-4 w-4" />
-            Share
-          </Button>
         </div>
       </div>
 
@@ -223,63 +279,46 @@ export default function BillingReportsClient({
             <TrendingUp className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalInvoiceRevenue.toLocaleString()} {currency}</div>
-            <p className="text-xs text-muted-foreground">From paid invoices</p>
+            <div className="text-2xl font-bold">{formatCurrency(totalInvoiceRevenue + totalBillingRevenue, currency)}</div>
+            <p className="text-xs text-muted-foreground">Total from invoices & billings</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Invoices</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Billings</CardTitle>
             <FileText className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalInvoices}</div>
-            <p className="text-xs text-muted-foreground">All invoices created</p>
+            <div className="text-2xl font-bold">{totalBillings}</div>
+            <p className="text-xs text-muted-foreground">Billings created</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Paid Invoices</CardTitle>
+            <CardTitle className="text-sm font-medium">Billing Revenue</CardTitle>
             <TrendingUp className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{paidInvoices}</div>
-            <p className="text-xs text-muted-foreground">Paid invoices</p>
+            <div className="text-2xl font-bold">{formatCurrency(totalBillingRevenue, currency)}</div>
+            <p className="text-xs text-muted-foreground">Revenue from billings</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
-            <TrendingDown className="h-4 w-4 text-warning" />
+            <CardTitle className="text-sm font-medium">Receipts</CardTitle>
+            <FileText className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingPayments + failedPayments}</div>
-            <p className="text-xs text-muted-foreground">Pending/Failed payments</p>
+            <div className="text-2xl font-bold">{totalReceipts}</div>
+            <p className="text-xs text-muted-foreground">Receipts created</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Billing Entry Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Add New Billing Entry
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <BillingEntryForm
-            hotelId={hotelId}
-            currency={currency}
-            onEntryAdded={handleEntryAdded}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Invoice Items Table */}
+      {/* Billing Entries Table */}
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -291,7 +330,7 @@ export default function BillingReportsClient({
           </div>
         </CardHeader>
         <CardContent>
-          {invoiceItems.length === 0 ? (
+          {billings.length === 0 ? (
             <div className="py-12 text-center">
               <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
               <h3 className="mt-2 text-lg font-semibold">No billing entries</h3>
@@ -302,30 +341,25 @@ export default function BillingReportsClient({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Invoice</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Category</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead>Quantity</TableHead>
                     <TableHead>Unit Price</TableHead>
                     <TableHead>Total</TableHead>
-                    <TableHead>Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {invoiceItems.map((item) => {
-                    const invoice = invoices?.find(inv => inv.id === item.invoice_id);
-                    return (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">
-                          {invoice?.invoice_number || 'N/A'}
-                        </TableCell>
-                        <TableCell>{item.description}</TableCell>
-                        <TableCell>{item.quantity}</TableCell>
-                        <TableCell>{item.unit_price} {currency}</TableCell>
-                        <TableCell>{item.total_price} {currency}</TableCell>
-                        <TableCell>{formatDate(item.created_at)}</TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {billings.map((billing) => (
+                    <TableRow key={billing.id}>
+                      <TableCell>{format(new Date(billing.date), "MMM dd, yyyy")}</TableCell>
+                      <TableCell className="capitalize">{billing.category}</TableCell>
+                      <TableCell>{billing.description}</TableCell>
+                      <TableCell>{billing.quantity}</TableCell>
+                      <TableCell>{formatCurrency(billing.unit_price, currency)}</TableCell>
+                      <TableCell>{formatCurrency(billing.total_amount, currency)}</TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>
@@ -333,50 +367,44 @@ export default function BillingReportsClient({
         </CardContent>
       </Card>
 
-      {/* Invoices Table */}
+      {/* Receipts Table */}
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Invoice Details
+              Receipts
             </CardTitle>
-            <p className="text-sm text-muted-foreground">All invoices for the selected period</p>
+            <p className="text-sm text-muted-foreground">All receipts for the selected period</p>
           </div>
         </CardHeader>
         <CardContent>
-          {invoices && invoices.length === 0 ? (
+          {receipts.length === 0 ? (
             <div className="py-12 text-center">
               <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-2 text-lg font-semibold">No invoices found</h3>
-              <p className="text-muted-foreground">No invoices found for the selected period.</p>
+              <h3 className="mt-2 text-lg font-semibold">No receipts</h3>
+              <p className="text-muted-foreground">No receipts found for the selected period.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Invoice Number</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Notes</TableHead>
+                    <TableHead>Method</TableHead>
+                    <TableHead>Remarks</TableHead>
+                    <TableHead>Billing ID</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {invoices?.map((invoice) => (
-                    <TableRow key={invoice.id}>
-                      <TableCell className="font-medium">
-                        {invoice.invoice_number}
-                      </TableCell>
-                      <TableCell>{formatDate(invoice.created_at)}</TableCell>
-                      <TableCell>{invoice.total_amount} {currency}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {invoice.status.replace("_", " ")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{invoice.notes || '-'}</TableCell>
+                  {receipts.map((receipt) => (
+                    <TableRow key={receipt.id}>
+                      <TableCell>{format(new Date(receipt.created_at), "MMM dd, yyyy")}</TableCell>
+                      <TableCell>{formatCurrency(receipt.amount, currency)}</TableCell>
+                      <TableCell className="capitalize">{receipt.payment_method}</TableCell>
+                      <TableCell>{receipt.remarks}</TableCell>
+                      <TableCell>{receipt.billing_id?.substring(0, 8)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

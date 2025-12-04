@@ -47,13 +47,13 @@ const managementNavItems = [
   { href: "/dashboard/messages", label: "Messages", icon: MessageSquare },
   { href: "/dashboard/channels", label: "Channels", icon: Globe },
   { href: "/dashboard/invoices", label: "Invoices", icon: FileText },
+  { href: "/dashboard/bills", label: "Bills", icon: FileText },
   { href: "/dashboard/smart-locks", label: "Smart Locks", icon: Key },
 ]
 
 const analyticsNavItems = [
   { href: "/profile", label: "Profile", icon: User },
   { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
-  { href: "/dashboard/reports/billing", label: "Billing Reports", icon: FileText },
   { href: "/dashboard/tasks", label: "Tasks", icon: ListTodo },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]

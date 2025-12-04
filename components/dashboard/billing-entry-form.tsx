@@ -95,46 +95,27 @@ export function BillingEntryForm({ hotelId, currency, onEntryAdded }: BillingEnt
 
     const supabase = createClient();
 
-    // Create an invoice to hold the billing entries
-    const { data: invoice, error: invoiceError } = await supabase
-      .from("invoices")
-      .insert({
-        hotel_id: hotelId,
-        invoice_number: `BILL-${Date.now()}`, // Generate a unique billing number
-        status: "draft",
-        subtotal: subtotal,
-        tax_amount: 0,
-        total_amount: subtotal,
-        created_at: formData.date,
-        notes: formData.notes || null,
-      })
-      .select()
-      .single();
+    // Create billing entries
+    for (const item of items) {
+      if (item.description && (item.unit_price > 0)) {
+        const { error: billingError } = await supabase
+          .from("billings")
+          .insert({
+            hotel_id: hotelId,
+            category: item.line_item || "General",
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            total_amount: item.quantity * item.unit_price,
+            date: formData.date,
+          });
 
-    if (invoiceError) {
-      console.error("Error creating invoice:", invoiceError);
-      setLoading(false);
-      return;
-    }
-
-    // Insert billing items
-    const invoiceItems = items
-      .filter((item) => item.description && (item.unit_price > 0 || item.debit > 0 || item.receiving_amount > 0))
-      .map((item) => ({
-        invoice_id: invoice.id,
-        description: item.description,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total_price: item.quantity * item.unit_price,
-      }));
-
-    if (invoiceItems.length > 0) {
-      const { error: itemsError } = await supabase
-        .from("invoice_items")
-        .insert(invoiceItems);
-
-      if (itemsError) {
-        console.error("Error creating invoice items:", itemsError);
+        if (billingError) {
+          console.error("Error creating billing:", billingError);
+          setLoading(false);
+          alert('Failed to create billing. Please try again.');
+          return;
+        }
       }
     }
 

@@ -71,6 +71,30 @@ interface InvoiceItem {
   created_at: string;
 }
 
+interface Billing {
+  id: string;
+  hotel_id: string;
+  booking_id: string;
+  category: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total_amount: number;
+  date: string;
+  created_at: string;
+}
+
+interface Receipt {
+  id: string;
+  hotel_id: string;
+  billing_id: string;
+  booking_id: string;
+  amount: number;
+  payment_method: string;
+  remarks: string;
+  created_at: string;
+}
+
 interface BillingReportProps {
   searchParams: {
     from?: string;
@@ -170,6 +194,36 @@ export default async function BillingReportsPage({ searchParams }: BillingReport
     return format(new Date(dateString), "MMM dd, yyyy 'at' h:mm a");
   };
 
+  // Fetch all billings for this hotel (the new table)
+  const { data: billings } = await supabase
+    .from("billings")
+    .select("*")
+    .eq("hotel_id", hotel.id)
+    .gte("date", startDate)
+    .lte("date", endDate)
+    .order("date", { ascending: false });
+
+  // Fetch receipts for billings
+  const billingIds = billings?.map(b => b.id) || [];
+  let receipts: Receipt[] = [];
+
+  if (billingIds.length > 0) {
+    const { data: receiptData } = await supabase
+      .from("receipts")
+      .select("*")
+      .in("billing_id", billingIds)
+      .order("created_at", { ascending: false });
+
+    receipts = receiptData || [];
+  }
+
+  // Calculate statistics for billings and receipts
+  const totalBillings = billings?.length || 0;
+  const totalBillingRevenue = billings?.reduce((sum, bill) => sum + bill.total_amount, 0) || 0;
+
+  const totalReceipts = receipts?.length || 0;
+  const totalReceiptRevenue = receipts?.reduce((sum, receipt) => sum + receipt.amount, 0) || 0;
+
   // Group payments by method
   const paymentMethods = payments.reduce(
     (acc, payment) => {
@@ -178,6 +232,15 @@ export default async function BillingReportsPage({ searchParams }: BillingReport
     },
     {} as Record<string, number>
   );
+
+  // Group billings by category
+  const billingCategories = billings?.reduce(
+    (acc, billing) => {
+      acc[billing.category] = (acc[billing.category] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  ) || {};
 
   return (
     <BillingReportsClient
@@ -189,6 +252,9 @@ export default async function BillingReportsPage({ searchParams }: BillingReport
       payments={payments}
       invoices={invoices || []}
       invoiceItems={invoiceItems}
+      billings={billings || []}
+      receipts={receipts || []}
+      billingCategories={billingCategories}
     />
   );
 }

@@ -51,3 +51,25 @@ For detailed information about the Moyasar integration, see [docs/MOYASAR_INTEGR
 ## Deployment
 
 This app is configured for deployment on Vercel. Simply connect your repository to Vercel and configure the required environment variables.
+
+
+
+in the billings repports make if the owner will add billings make the date
+    with calendry and categories (he must write ore selet for service     
+
+    "londering ,coffe shop,restaurent,parking , gyme , wifi"  and
+    selectcategorie ore write categorie and remplire the number and the price
+    and the total tq total is the numer * price and he termine the added show
+    popape write "create the billing succesfull and show in the popape the
+
+  date
+     and the number of the billing and total and imprime and continue ore 
+    Creating a receipt"  and if he click in the Creating a receipt open a 
+    formulaire il faut le remplire contien"Payment of amount,methode of   
+  payment
+     (cashe ore transaction banker ore payment card) and also remarque  " 
+
+  and
+     give me the code dans sql pour modifier les tableux de supabase si il ya
+
+    des modifications
