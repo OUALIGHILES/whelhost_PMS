@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator"
 import { createClient } from "@/lib/supabase/client"
 import { Loader2, UserPlus } from "lucide-react"
 import type { Unit, Guest, Booking } from "@/lib/types"
+import { isUnitAvailable } from "@/lib/utils/unit-availability"
 
 interface BookingFormProps {
   hotelId: string
@@ -50,7 +51,79 @@ export function BookingForm({ hotelId, currency, units, guests, booking }: Booki
     id_number: "",
   })
 
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [unitAvailable, setUnitAvailable] = useState(true);
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+  const [availableUnits, setAvailableUnits] = useState<Unit[]>(units);
+
   const selectedUnit = units.find((u) => u.id === formData.unit_id)
+
+  // Check unit availability when unit_id, check_in or check_out changes
+  useEffect(() => {
+    const checkAvailability = async () => {
+      if (formData.unit_id && formData.check_in && formData.check_out) {
+        setIsCheckingAvailability(true);
+        try {
+          const available = await isUnitAvailable(
+            formData.unit_id,
+            formData.check_in,
+            formData.check_out
+          );
+
+          setUnitAvailable(available);
+          if (!available) {
+            setAvailabilityError('The selected unit is not available for the selected dates.');
+          } else {
+            setAvailabilityError(null);
+          }
+        } catch (error) {
+          console.error('Error checking availability:', error);
+          setAvailabilityError('Error checking availability. Please try again.');
+          setUnitAvailable(false);
+        } finally {
+          setIsCheckingAvailability(false);
+        }
+      } else {
+        setUnitAvailable(true);
+        setAvailabilityError(null);
+      }
+    };
+
+    if (formData.unit_id && formData.check_in && formData.check_out) {
+      checkAvailability();
+    } else {
+      setUnitAvailable(true);
+      setAvailabilityError(null);
+    }
+  }, [formData.unit_id, formData.check_in, formData.check_out]);
+
+  // Update available units when check_in/check_out changes
+  useEffect(() => {
+    const updateAvailableUnits = async () => {
+      if (formData.check_in && formData.check_out) {
+        try {
+          const availableUnitsList = [];
+          for (const unit of units) {
+            const isAvail = await isUnitAvailable(unit.id, formData.check_in, formData.check_out);
+            // Include unit if it's available OR if it's the currently selected unit for editing
+            if (isAvail || unit.id === formData.unit_id) {
+              availableUnitsList.push(unit);
+            }
+          }
+          setAvailableUnits(availableUnitsList);
+        } catch (error) {
+          console.error('Error updating available units:', error);
+          // Fall back to all units if there's an error
+          setAvailableUnits(units);
+        }
+      } else {
+        // If no dates selected, show all units
+        setAvailableUnits(units);
+      }
+    };
+
+    updateAvailableUnits();
+  }, [formData.check_in, formData.check_out, formData.unit_id, units]);
 
   const calculateTotal = () => {
     if (!formData.check_in || !formData.check_out || !selectedUnit?.room_type?.base_price) return
@@ -65,6 +138,21 @@ export function BookingForm({ hotelId, currency, units, guests, booking }: Booki
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Check if unit is available before submitting
+    if (formData.unit_id && formData.check_in && formData.check_out) {
+      const available = await isUnitAvailable(
+        formData.unit_id,
+        formData.check_in,
+        formData.check_out
+      );
+
+      if (!available) {
+        alert('The selected unit is not available for the selected dates. Please select another unit or adjust your dates.');
+        return;
+      }
+    }
+
     setLoading(true)
 
     const supabase = createClient()
@@ -197,16 +285,20 @@ export function BookingForm({ hotelId, currency, units, guests, booking }: Booki
                 <SelectValue placeholder="Choose a room" />
               </SelectTrigger>
               <SelectContent>
-                {units
-                  .filter((u) => u.status === "available" || u.id === booking?.unit_id)
-                  .map((unit) => (
-                    <SelectItem key={unit.id} value={unit.id}>
-                      {unit.name}{" "}
-                      {unit.room_type && `- ${unit.room_type.name} (${unit.room_type.base_price} ${currency}/night)`}
-                    </SelectItem>
-                  ))}
+                {availableUnits.map((unit) => (
+                  <SelectItem
+                    key={unit.id}
+                    value={unit.id}
+                  >
+                    {unit.name}{" "}
+                    {unit.room_type && `- ${unit.room_type.name} (${unit.room_type.base_price} ${currency}/night)`}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
+            {availabilityError && (
+              <p className="text-sm text-red-500">{availabilityError}</p>
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

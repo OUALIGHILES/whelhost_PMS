@@ -17,6 +17,7 @@ import {
   AlertTriangle,
 } from "lucide-react"
 import { HotelSetupForm } from "@/components/dashboard/hotel-setup-form"
+import DashboardCharts from "@/components/dashboard/dashboard-charts"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -229,6 +230,19 @@ export default async function DashboardPage() {
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Link>
             </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Section */}
+      <div className="mt-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">Performance Analytics</CardTitle>
+            <CardDescription>Visual insights into your hotel's performance and billing trends</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DashboardCharts hotelId={hotel.id} />
           </CardContent>
         </Card>
       </div>

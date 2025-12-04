@@ -31,10 +31,12 @@ import {
   ListTodo,
   Crown,
   LogOut,
+  Bell,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { NotificationBell } from "@/components/dashboard/notification-bell"
 
 const mainNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -78,15 +80,20 @@ export function DashboardSidebar({ user, profile, hotel }: DashboardSidebarProps
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border p-4">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <Building2 className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-bold">WhelHost</span>
-            <span className="text-xs text-sidebar-foreground/60">{hotel?.name || "Setup your hotel"}</span>
-          </div>
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+              <Building2 className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-bold">WhelHost</span>
+              <span className="text-xs text-sidebar-foreground/60">{hotel?.name || "Setup your hotel"}</span>
+            </div>
+          </Link>
+          {hotel && (
+            <NotificationBell hotelId={hotel.id} userId={user.id} />
+          )}
+        </div>
       </SidebarHeader>
 
       <SidebarContent>

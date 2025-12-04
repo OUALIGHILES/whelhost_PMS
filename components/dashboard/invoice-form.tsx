@@ -122,6 +122,18 @@ export function InvoiceForm({ hotelId, currency, guests, bookings }: InvoiceForm
             total_price: item.quantity * item.unit_price,
           })),
       )
+
+      // Create a notification for the new invoice
+      const supabaseClient = createClient();
+      await supabaseClient
+        .from('notifications')
+        .insert([{
+          hotel_id: hotelId,
+          subject: `New Invoice Created: ${invoice?.invoice_number || 'INV-' + Date.now()}`,
+          content: `Invoice #${invoice?.invoice_number || 'unknown'} has been created with total amount of ${total} ${currency}`,
+          message: `Invoice #${invoice?.invoice_number || 'unknown'} has been created with total amount of ${total} ${currency}`,
+          notification_type: 'invoice'
+        }]);
     }
 
     router.push("/dashboard/invoices")

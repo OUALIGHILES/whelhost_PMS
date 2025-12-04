@@ -75,6 +75,17 @@ export function ReceiptForm({ hotelId, currency, billings }: ReceiptFormProps) {
         if (receiptError) {
           console.error('Error creating receipt record:', receiptError);
           // We'll still continue as the invoice was created successfully
+        } else {
+          // Create a notification for the new receipt
+          await supabase
+            .from('notifications')
+            .insert([{
+              hotel_id: hotelId,
+              subject: 'New Receipt Created',
+              content: `A receipt for ${amount} ${currency} has been created for billing ${selectedBilling.substring(0, 8)}... using ${method} payment method`,
+              message: `A receipt for ${amount} ${currency} has been created using ${method} payment method`,
+              notification_type: 'payment'
+            }]);
         }
       } else {
         // If no billing was selected, just create the receipt record with amount
@@ -89,6 +100,17 @@ export function ReceiptForm({ hotelId, currency, billings }: ReceiptFormProps) {
 
         if (receiptError) {
           console.error('Error creating receipt record:', receiptError);
+        } else {
+          // Create a notification for the new receipt
+          await supabase
+            .from('notifications')
+            .insert([{
+              hotel_id: hotelId,
+              subject: 'New Receipt Created',
+              content: `A receipt for ${amount} ${currency} has been created using ${method} payment method`,
+              message: `A receipt for ${amount} ${currency} has been created using ${method} payment method`,
+              notification_type: 'payment'
+            }]);
         }
       }
 

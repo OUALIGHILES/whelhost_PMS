@@ -329,10 +329,32 @@ export default function BillsClient({ bills, currency, hotelId, onBillCreated, s
               console.error('Error creating invoice items:', itemError);
             } else {
               console.log(`Created ${invoiceItemData.length} invoice items`);
+
+              // Create a notification for the new invoice
+              await supabase
+                .from('notifications')
+                .insert([{
+                  hotel_id: hotelId,
+                  subject: 'New Invoice Created',
+                  content: `Invoice #${invoiceNumber} has been created with total amount of ${overallTotal * 1.15} ${currency}`,
+                  message: `Invoice #${invoiceNumber} has been created with total amount of ${overallTotal * 1.15} ${currency}`,
+                  notification_type: 'invoice'
+                }]);
             }
           }
         }
       }
+
+      // Create a notification for the new billing entry
+      await supabase
+        .from('notifications')
+        .insert([{
+          hotel_id: hotelId,
+          subject: 'New Billing Entry Created',
+          content: `${results.length} new billing items have been added`,
+          message: `${results.length} new billing items have been added`,
+          notification_type: 'billing'
+        }]);
 
       console.log(`Successfully saved ${results.length} billing items`);
 

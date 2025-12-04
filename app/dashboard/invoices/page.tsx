@@ -3,15 +3,15 @@ import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { 
-  Plus, 
-  FileText, 
-  MoreVertical, 
-  Eye, 
-  Download, 
+import {
+  Plus,
+  FileText,
+  MoreVertical,
+  Eye,
+  Download,
   DollarSign,
-  Search,
   Filter,
   User,
   Calendar,
@@ -22,7 +22,13 @@ import {
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
+import { SearchBar } from "@/components/dashboard/invoices-search-bar";
+
+interface InvoicesPageProps {
+  searchParams: {
+    search?: string;
+  };
+}
 
 const statusColors = {
   draft: "bg-muted text-muted-foreground",
@@ -32,31 +38,7 @@ const statusColors = {
   cancelled: "bg-muted text-muted-foreground",
 };
 
-// Adding translation function
-const t = (key: string) => {
-  const translations: Record<string, string> = {
-    'search': 'بحث...',
-    'filter': 'تصفية',
-    'user': 'المستخدم',
-    'voucherNo': 'رقم السند',
-    'voucherDate': 'تاريخ السند',
-    'paymentType': 'نوع الدفع',
-    'type': 'النوع',
-    'currency': 'العملة',
-    'value': 'القيمة',
-    'customerInput': 'مدخلات العميل',
-    'for': 'من أجل',
-    'invoiceNo': 'رقم الفاتورة',
-    'entryNo': 'رقم القيد',
-    'more': 'المزيد +',
-    'totalVouchers': 'إجمالي الإيصالات',
-    'allReceipts': 'جميع الإيصالات',
-  };
-  
-  return translations[key] || key;
-};
-
-export default async function InvoicesPage() {
+export default async function InvoicesPage({ searchParams }: InvoicesPageProps) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -87,7 +69,7 @@ export default async function InvoicesPage() {
       {/* Header/Navigation */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">{t('allReceipts')}</h1>
+          <h1 className="text-3xl font-bold">Invoices</h1>
           <p className="text-muted-foreground">Manage billing and track payments</p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -110,11 +92,11 @@ export default async function InvoicesPage() {
         </div>
       </div>
 
-      {/* Total Vouchers Card */}
+      {/* Total Invoices Card */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-lg">{t('totalVouchers')}</CardTitle>
+            <CardTitle className="text-lg">Total Invoices</CardTitle>
             <p className="text-sm text-muted-foreground">{invoices?.length || 0} total invoices</p>
           </div>
           <Badge variant="outline">{invoices?.length || 0}</Badge>
@@ -168,33 +150,27 @@ export default async function InvoicesPage() {
       <Card>
         <CardContent className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder={t('search')}
-                className="pl-10 rounded-lg"
-              />
-            </div>
-            
+            <SearchBar />
+
             <div className="relative">
               <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder={t('user')}
+                placeholder="Customer"
                 className="pl-10 rounded-lg"
               />
             </div>
-            
+
             <div className="relative">
               <Hash className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder={t('voucherNo')}
+                placeholder="Invoice Number"
                 className="pl-10 rounded-lg"
               />
             </div>
-            
+
             <Button variant="outline" className="flex items-center gap-2">
               <Filter className="h-4 w-4" />
-              {t('filter')}
+              Filter
             </Button>
           </div>
         </CardContent>
@@ -203,8 +179,8 @@ export default async function InvoicesPage() {
       {/* Invoices Table */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('allReceipts')}</CardTitle>
-          <p className="text-sm text-muted-foreground">Detailed summary of all vouchers</p>
+          <CardTitle>All Invoices</CardTitle>
+          <p className="text-sm text-muted-foreground">Detailed summary of all invoices</p>
         </CardHeader>
         <CardContent>
           {!invoices || invoices.length === 0 ? (
@@ -223,14 +199,14 @@ export default async function InvoicesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead><FileText className="h-4 w-4 inline mr-1" /> {t('voucherNo')}</TableHead>
-                  <TableHead><FileText className="h-4 w-4 inline mr-1" /> {t('type')}</TableHead>
-                  <TableHead><Calendar className="h-4 w-4 inline mr-1" /> {t('voucherDate')}</TableHead>
-                  <TableHead><CreditCard className="h-4 w-4 inline mr-1" /> {t('paymentType')}</TableHead>
-                  <TableHead><DollarSign className="h-4 w-4 inline mr-1" /> {t('value')}</TableHead>
-                  <TableHead><User className="h-4 w-4 inline mr-1" /> {t('customerInput')}</TableHead>
-                  <TableHead><MessageSquare className="h-4 w-4 inline mr-1" /> {t('for')}</TableHead>
-                  <TableHead>{t('more')}</TableHead>
+                  <TableHead><FileText className="h-4 w-4 inline mr-1" /> Invoice Number</TableHead>
+                  <TableHead><FileText className="h-4 w-4 inline mr-1" /> Type</TableHead>
+                  <TableHead><Calendar className="h-4 w-4 inline mr-1" /> Date</TableHead>
+                  <TableHead><CreditCard className="h-4 w-4 inline mr-1" /> Status</TableHead>
+                  <TableHead><DollarSign className="h-4 w-4 inline mr-1" /> Amount</TableHead>
+                  <TableHead><User className="h-4 w-4 inline mr-1" /> Customer</TableHead>
+                  <TableHead><MessageSquare className="h-4 w-4 inline mr-1" /> Notes</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
