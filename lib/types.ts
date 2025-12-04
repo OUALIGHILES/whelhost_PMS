@@ -243,6 +243,16 @@ export interface Subscription {
   updated_at: string
 }
 
+export interface BookingRule {
+  id: string
+  hotel_id: string
+  name: string
+  rule: string
+  applies_to_all_units: boolean
+  created_at: string
+  updated_at: string
+}
+
 // Channex webhook payload types
 export interface ChannexBookingPayload {
   external_id: string

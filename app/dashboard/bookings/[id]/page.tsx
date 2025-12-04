@@ -15,9 +15,12 @@ import {
   Phone,
   Mail,
   FileText,
+  Receipt,
 } from "lucide-react"
 import { BookingActions } from "@/components/dashboard/booking-actions"
 import { AccessCodePanel } from "@/components/dashboard/access-code-panel"
+import { RecordPaymentButton } from "@/components/dashboard/record-payment-button"
+import { CheckoutBillDetails } from "@/components/dashboard/checkout-bill-details"
 
 const statusColors = {
   pending: "bg-warning/10 text-warning border-warning/20",
@@ -121,6 +124,21 @@ export default async function BookingDetailPage({
 
         <BookingActions bookingId={id} status={booking.status} hasSmartLock={!!booking.unit?.smart_lock_id} />
       </div>
+
+      {booking.status === 'checked_out' && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Receipt className="h-5 w-5" />
+              <CardTitle>Checkout Details</CardTitle>
+            </div>
+            <Badge variant="outline">Completed</Badge>
+          </CardHeader>
+          <CardContent>
+            <CheckoutBillDetails booking={booking} payments={payments || []} />
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main Content */}
@@ -386,7 +404,14 @@ export default async function BookingDetailPage({
                 </div>
               )}
 
-              <Button className="w-full">Record Payment</Button>
+              <RecordPaymentButton
+                bookingId={id}
+                bookingAmount={booking.total_amount || 0}
+                currency={booking.hotel?.currency || 'SAR'}
+                guestName={`${booking.guest?.first_name || ''} ${booking.guest?.last_name || ''}`.trim()}
+                checkIn={booking.check_in}
+                checkOut={booking.check_out}
+              />
             </CardContent>
           </Card>
 

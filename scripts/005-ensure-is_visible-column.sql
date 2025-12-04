@@ -14,4 +14,4 @@ BEGIN
         -- If the column exists, ensure default is set correctly
         ALTER TABLE public.units ALTER COLUMN is_visible SET DEFAULT TRUE;
     END IF;
-END $$;
+END $$; 

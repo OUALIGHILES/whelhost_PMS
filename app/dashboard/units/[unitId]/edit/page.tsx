@@ -21,20 +21,26 @@ export default async function EditUnitPage({ params }: Props) {
 
   if (!hotel) redirect("/dashboard")
 
-  // Get the unit data
-  const { data: unit } = await supabase
+  // Get the unit data with proper error handling
+  const { data: unit, error: unitError } = await supabase
     .from("units")
     .select("id, name, room_type_id, floor, status, smart_lock_id, notes, is_visible, created_at, updated_at")
     .eq("id", params.unitId)
     .eq("hotel_id", hotel.id)
-    .single() as { data: Unit | null }
+    .single() as { data: Unit | null, error: any }
 
-  if (!unit) {
+  if (unitError || !unit) {
+    console.error("Error fetching unit or unit not found:", unitError?.message, "params.unitId:", params.unitId, "hotel.id:", hotel.id);
     redirect("/dashboard/units")
   }
 
   // Get available room types for the hotel
-  const { data: roomTypes } = await supabase.from("room_types").select("*").eq("hotel_id", hotel.id)
+  const { data: roomTypes, error: roomTypesError } = await supabase.from("room_types").select("*").eq("hotel_id", hotel.id)
+
+  if (roomTypesError) {
+    console.error("Error fetching room types:", roomTypesError?.message);
+    redirect("/dashboard/units")
+  }
 
   return (
     <div className="mx-auto max-w-2xl">

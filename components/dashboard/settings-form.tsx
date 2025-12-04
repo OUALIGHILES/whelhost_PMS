@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Loader2 } from "lucide-react"
 import type { User } from "@supabase/supabase-js"
 import type { Profile, Hotel } from "@/lib/types"
+import { BookingRulesForm } from "@/components/dashboard/booking-rules-form"
 
 interface SettingsFormProps {
   user: User
@@ -78,6 +79,7 @@ export function SettingsForm({ user, profile, hotel }: SettingsFormProps) {
       <TabsList>
         <TabsTrigger value="profile">Profile</TabsTrigger>
         <TabsTrigger value="hotel">Hotel</TabsTrigger>
+        {hotel && <TabsTrigger value="booking_rules">Booking Rules</TabsTrigger>}
       </TabsList>
 
       <TabsContent value="profile">
@@ -231,6 +233,12 @@ export function SettingsForm({ user, profile, hotel }: SettingsFormProps) {
           </CardContent>
         </Card>
       </TabsContent>
+
+      {hotel && (
+        <TabsContent value="booking_rules">
+          <BookingRulesForm hotel={hotel} />
+        </TabsContent>
+      )}
     </Tabs>
   )
 }

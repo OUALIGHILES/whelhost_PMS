@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, Users, DollarSign, BedDouble, CalendarDays } from "lucide-react"
+import { TrendingUp, Users, DollarSign, BedDouble, CalendarDays, FileText } from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 export default async function ReportsPage() {
   const supabase = await createClient()
@@ -95,6 +97,42 @@ export default async function ReportsPage() {
         <h1 className="text-3xl font-bold">Reports</h1>
         <p className="text-muted-foreground">Analytics and performance metrics for your hotel</p>
       </div>
+
+      {/* Billing Reports Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Billing Reports
+            </div>
+            <Button asChild>
+              <Link href="/dashboard/reports/billing">View All Billing Reports</Link>
+            </Button>
+          </CardTitle>
+          <CardDescription>Comprehensive details of all billing transactions, payments, and revenue</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg border border-border p-4">
+              <p className="text-2xl font-bold">{paidInvoices.length}</p>
+              <p className="text-sm text-muted-foreground">Total Paid Invoices</p>
+            </div>
+            <div className="rounded-lg border border-border p-4">
+              <p className="text-2xl font-bold">{totalRevenue.toLocaleString()} {hotel.currency}</p>
+              <p className="text-sm text-muted-foreground">Total Revenue</p>
+            </div>
+            <div className="rounded-lg border border-border p-4">
+              <p className="text-2xl font-bold">{paidInvoices.filter(inv => inv.status === 'paid').length}</p>
+              <p className="text-sm text-muted-foreground">Paid Invoices</p>
+            </div>
+            <div className="rounded-lg border border-border p-4">
+              <p className="text-2xl font-bold">{paidInvoices.filter(inv => inv.status === 'pending').length}</p>
+              <p className="text-sm text-muted-foreground">Pending Invoices</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

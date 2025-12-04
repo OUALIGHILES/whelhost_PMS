@@ -194,7 +194,7 @@ export default async function BookingsPage() {
           <CardDescription>{bookings?.length || 0} total bookings</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="upcoming">
+          <Tabs defaultValue="all">
             <TabsList>
               <TabsTrigger value="upcoming">Upcoming ({upcomingBookings.length})</TabsTrigger>
               <TabsTrigger value="active">Active ({activeBookings.length})</TabsTrigger>

@@ -53,6 +53,7 @@ const managementNavItems = [
 const analyticsNavItems = [
   { href: "/profile", label: "Profile", icon: User },
   { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
+  { href: "/dashboard/reports/billing", label: "Billing Reports", icon: FileText },
   { href: "/dashboard/tasks", label: "Tasks", icon: ListTodo },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]

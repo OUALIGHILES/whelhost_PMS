@@ -4,7 +4,7 @@ const https = require('https');
 // Test configuration - Only use environment variables, no hardcoded defaults
 const config = {
   secretKey: process.env.MOYASAR_SECRET_KEY,
-  apiUrl: process.env.MOYASAR_API_URL || (process.env.NODE_ENV === 'development' ? 'https://api-test.moyasar.com/v1/' : 'https://api.moyasar.com/v1/'),
+  apiUrl: process.env.MOYASAR_API_URL || 'https://api.moyasar.com/v1/',
   publishableKey: process.env.NEXT_PUBLIC_MOYASAR_PUBLISHABLE_KEY,
 };
 

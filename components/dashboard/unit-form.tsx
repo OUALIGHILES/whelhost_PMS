@@ -109,8 +109,8 @@ export function UnitForm({ hotelId, roomTypes, unit }: UnitFormProps) {
 
     const supabase = createClient()
 
+    // Prepare the data for both create and update
     const data = {
-      hotel_id: hotelId,
       name: formData.name,
       room_type_id: formData.room_type_id || null,
       floor: formData.floor ? Number.parseInt(formData.floor) : null,
@@ -122,34 +122,56 @@ export function UnitForm({ hotelId, roomTypes, unit }: UnitFormProps) {
     let unitId: string | undefined
     let success = false
 
-    if (unit) {
-      const { error } = await supabase.from("units").update(data).eq("id", unit.id).eq("hotel_id", hotelId)
-      if (!error) {
+    try {
+      if (unit) {
+        // Update existing unit
+        const { error } = await supabase
+          .from("units")
+          .update(data)
+          .eq("id", unit.id)
+          .eq("hotel_id", hotelId)
+
+        if (error) {
+          console.error("Error updating unit:", error)
+          throw error
+        }
+
         unitId = unit.id
         success = true
-      }
-    } else {
-      const { data: insertedUnit, error } = await supabase.from("units").insert(data).select("id").single()
-      if (!error && insertedUnit) {
-        unitId = insertedUnit.id
-        success = true
-      }
-    }
+      } else {
+        // Create new unit
+        const { data: insertedUnit, error } = await supabase
+          .from("units")
+          .insert({ ...data, hotel_id: hotelId })
+          .select("id")
+          .single()
 
-    if (success && unitId) {
-      // If images were selected, upload them
-      if (fileInputRef.current?.files && fileInputRef.current.files.length > 0) {
-        await uploadImages(unitId)
+        if (error) {
+          console.error("Error creating unit:", error)
+          throw error
+        }
+
+        if (insertedUnit) {
+          unitId = insertedUnit.id
+          success = true
+        }
       }
 
-      router.push("/dashboard/units")
-      router.refresh()
-    } else {
-      console.error("Failed to save unit")
+      if (success && unitId) {
+        // If images were selected, upload them
+        if (fileInputRef.current?.files && fileInputRef.current.files.length > 0) {
+          await uploadImages(unitId)
+        }
+
+        router.push("/dashboard/units")
+        router.refresh()
+      }
+    } catch (error) {
+      console.error("Error saving unit:", error)
       alert("Failed to save unit. Please try again.")
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   return (
