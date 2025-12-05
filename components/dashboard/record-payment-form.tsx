@@ -21,9 +21,6 @@ import {
   Download,
   Printer,
   Share2,
-  Calendar,
-  User,
-  Mail,
   CheckCircle,
   AlertCircle,
   Clock
@@ -58,7 +55,7 @@ export function RecordPaymentForm({
 
   const supabase = createClient()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleManualPaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
@@ -67,16 +64,11 @@ export function RecordPaymentForm({
       let method: 'cash' | 'card' | 'bank_transfer' | 'moyasar' | 'other' = 'other'
       let status: 'completed' | 'pending' | 'failed' = 'completed'
 
-      // For this basic implementation, we'll handle the recording based on the payment method
-      // If it's a Moyasar payment, we'll use the proper Moyasar flow
       if (paymentMethod === 'card') {
         method = 'card'
       } else if (paymentMethod === 'bank') {
         method = 'bank_transfer'
         status = 'pending' // Bank transfers are typically pending until confirmed
-      } else if (paymentMethod === 'link') {
-        method = 'moyasar' // Payment link would be a Moyasar payment
-        status = 'pending' // Payment link would be pending until customer pays
       }
 
       const { data, error } = await supabase
@@ -120,8 +112,42 @@ export function RecordPaymentForm({
     }
   }
 
+  const handleMoyasarComplete = async (moyasarPaymentId: string) => {
+    try {
+      // Create payment record in database
+      const { data, error } = await supabase
+        .from('payments')
+        .insert({
+          booking_id: bookingId,
+          amount: parseFloat(amount),
+          method: 'moyasar',
+          status: 'pending', // Will be updated by webhook
+          reference: moyasarPaymentId,
+          notes: 'Payment via Moyasar payment link',
+        })
+        .select(`
+          id,
+          booking_id,
+          amount,
+          method,
+          status,
+          reference,
+          notes,
+          created_at
+        `)
+        .single()
+
+      if (error) throw error
+
+      setPaymentId(data.id)
+      setPaymentStatus('pending')
+    } catch (error) {
+      console.error('Error recording Moyasar payment:', error)
+      alert('Failed to record payment. Please try again.')
+    }
+  }
+
   const handleDownloadReceipt = () => {
-    // Create a simple text receipt
     const receiptContent = `
 RECEIPT
 =======
@@ -137,22 +163,20 @@ Reference: ${reference || 'N/A'}
 Date: ${new Date().toLocaleString()}
 
 Thank you for your payment.
-    `;
+    `
 
-    // Create and download the file
-    const blob = new Blob([receiptContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `receipt-${bookingId.substring(0, 8)}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const blob = new Blob([receiptContent], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `receipt-${bookingId.substring(0, 8)}.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   const handlePrintReceipt = () => {
-    // Create a print-friendly version
     const printContent = `
       <html>
         <head>
@@ -220,33 +244,31 @@ Thank you for your payment.
           </div>
         </body>
       </html>
-    `;
+    `
 
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open('', '_blank')
     if (printWindow) {
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      printWindow.focus();
+      printWindow.document.write(printContent)
+      printWindow.document.close()
+      printWindow.focus()
       setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-      }, 250);
+        printWindow.print()
+        printWindow.close()
+      }, 250)
     }
   }
 
   const handleShareReceipt = () => {
-    // Check if Web Share API is available
     if (navigator.share) {
       navigator.share({
         title: 'Payment Receipt',
         text: `Payment receipt for ${guestName}'s booking`,
         url: window.location.href
-      }).catch(console.error);
+      }).catch(console.error)
     } else {
-      // Fallback: copy to clipboard
-      const receiptText = `Payment receipt for ${guestName}'s booking. Booking ID: ${bookingId.substring(0, 8)}... Amount: ${currency} ${amount}`;
-      navigator.clipboard.writeText(receiptText);
-      alert('Receipt details copied to clipboard');
+      const receiptText = `Payment receipt for ${guestName}'s booking. Booking ID: ${bookingId.substring(0, 8)}... Amount: ${currency} ${amount}`
+      navigator.clipboard.writeText(receiptText)
+      alert('Receipt details copied to clipboard')
     }
   }
 
@@ -281,11 +303,10 @@ Thank you for your payment.
                 )}
                 {paymentStatus === 'pending' && (
                   <p>
-                    {paymentMethod === 'bank' ? 'Bank transfer pending confirmation' : 'Payment link sent to customer'}
+                    {paymentMethod === 'bank' ? 'Bank transfer pending confirmation' : 
+                     paymentMethod === 'link' ? 'Customer redirected to payment page' :
+                     'Payment link sent to customer'}
                   </p>
-                )}
-                {paymentStatus !== 'completed' && paymentStatus !== 'pending' && (
-                  <p>Please try again or contact support</p>
                 )}
               </div>
             </div>
@@ -436,7 +457,7 @@ Thank you for your payment.
                 />
               </div>
 
-              <Button type="button" onClick={handleSubmit} className="w-full" disabled={loading}>
+              <Button type="button" onClick={handleManualPaymentSubmit} className="w-full" disabled={loading}>
                 {loading ? 'Recording Payment...' : 'Record Bank Transfer'}
               </Button>
             </CardContent>
@@ -483,7 +504,7 @@ Thank you for your payment.
                 />
               </div>
 
-              <Button type="button" onClick={handleSubmit} className="w-full" disabled={loading}>
+              <Button type="button" onClick={handleManualPaymentSubmit} className="w-full" disabled={loading}>
                 {loading ? 'Recording Payment...' : 'Record Card Payment'}
               </Button>
             </CardContent>
@@ -495,7 +516,7 @@ Thank you for your payment.
             <CardHeader>
               <CardTitle className="text-base">Payment Link</CardTitle>
               <CardDescription>
-                Create a payment link using Moyasar
+                Create a secure payment link using Moyasar
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -505,13 +526,10 @@ Thank you for your payment.
                 currency={currency}
                 guestName={guestName}
                 description={`Payment for booking #${bookingId.substring(0, 8)}`}
-                onComplete={(paymentId) => {
-                  setPaymentId(paymentId);
-                  setPaymentStatus('pending'); // Payment will be pending until webhook confirms
-                }}
+                onComplete={handleMoyasarComplete}
                 onError={(error) => {
-                  console.error('Moyasar checkout error:', error);
-                  alert(`Payment checkout failed: ${error}`);
+                  console.error('Moyasar checkout error:', error)
+                  alert(`Payment checkout failed: ${error}`)
                 }}
               />
             </CardContent>
