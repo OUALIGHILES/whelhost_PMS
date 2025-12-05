@@ -175,18 +175,29 @@ export async function getReservationsPageData(): Promise<ReservationsPageData> {
     }));
   }
 
-  // Get units for the user's hotels
-  const { data: unitsData, error: unitsError } = await supabase
-    .from("units")
-    .select("id, number, name, status, base_price as pricePerNight")
-    .in("hotel_id", hotelIds);
-
+  // Get units for the user's hotels - try various field combinations
   let units: Unit[] = [];
-  if (unitsError) {
-    console.warn("Error fetching units:", unitsError.message);
+  let unitsData: any;
+  let unitsError: any;
 
-    // Fallback: Try simpler query if the first one fails
-    try {
+  // Try the most common field names first
+  ({ data: unitsData, error: unitsError } = await supabase
+    .from("units")
+    .select("id, number, name, status, base_price")
+    .in("hotel_id", hotelIds));
+
+  if (unitsError) {
+    console.warn("Error fetching units with standard fields:", unitsError.message);
+
+    // Try with just ID and any name field that might exist
+    const { data: minimalUnitsData, error: minimalUnitsError } = await supabase
+      .from("units")
+      .select("id, name, number")
+      .in("hotel_id", hotelIds);
+
+    if (minimalUnitsError) {
+      console.warn("Error fetching units with minimal fields:", minimalUnitsError.message);
+
       // Check if units table exists at all
       const { error: tableCheckError } = await supabase
         .from("units")
@@ -194,39 +205,47 @@ export async function getReservationsPageData(): Promise<ReservationsPageData> {
         .limit(1);
 
       if (tableCheckError && tableCheckError.message.includes("does not exist")) {
-        console.warn("Units table does not exist");
+        console.warn("Units table does not exist in the database");
         units = []; // Return empty array if no units table
       } else {
-        // If it's a different error, try a minimal query
-        const { data: minimalUnitsData, error: minimalUnitsError } = await supabase
+        // Try with the most basic query possible - just get all units for the hotel
+        const { data: basicUnitsData, error: basicUnitsError } = await supabase
           .from("units")
-          .select("id, number, name")
+          .select("*")
           .in("hotel_id", hotelIds);
 
-        if (minimalUnitsError) {
-          console.error("Error fetching minimal units:", minimalUnitsError);
+        if (basicUnitsError) {
+          console.error("Error fetching basic units data:", basicUnitsError);
           units = []; // Return empty array on error
         } else {
-          units = minimalUnitsData.map(item => ({
-            id: item.id,
-            number: item.number || "N/A",
-            name: item.name || "Unit",
-            status: "vacant", // Default status
-            pricePerNight: 0, // Default price
+          // Use the basic data and try to map it appropriately
+          units = basicUnitsData.map((item: any) => ({
+            id: item.id || item.unit_id || item.uid,
+            number: item.number || item.unit_number || item.name || item.unit_name || item.id || "N/A",
+            name: item.name || item.title || item.unit_name || item.description || "Unit",
+            status: mapUnitStatus(item.status || item.unit_status) || "vacant",
+            pricePerNight: item.base_price || item.price || item.daily_rate || 0,
           }));
         }
       }
-    } catch (err) {
-      console.error("Error in units fallback:", err);
-      units = [];
+    } else {
+      // Use minimal units data
+      units = minimalUnitsData.map((item: any) => ({
+        id: item.id,
+        number: item.number || item.name || item.id, // Use number, name, or id as number
+        name: item.name || item.number || "Unit", // Use name or number as name
+        status: "vacant", // Default status if not provided
+        pricePerNight: 0, // Default price if not provided
+      }));
     }
   } else {
-    units = unitsData.map(item => ({
+    // Use the standard units data
+    units = unitsData.map((item: any) => ({
       id: item.id,
-      number: item.number || item.id, // Use ID if number is not available
-      name: item.name || item.number || "Unit",
+      number: item.number || item.name || item.id, // Use number, name, or id as number
+      name: item.name || item.number || "Unit", // Use name or number as name
       status: mapUnitStatus(item.status) || "vacant",
-      pricePerNight: item.pricePerNight || 0,
+      pricePerNight: item.base_price || 0,
     }));
 
     // Get current bookings to update unit statuses
@@ -245,20 +264,20 @@ export async function getReservationsPageData(): Promise<ReservationsPageData> {
       // Update the unit statuses based on bookings
       units = units.map(unit => {
         // Check if the unit has an active booking
-        const activeBooking = bookingData.find(booking =>
+        const activeBooking = bookingData.find((booking: any) =>
           booking.unit_id === unit.id &&
           booking.check_in <= today &&
           booking.check_out > today
         );
 
         // Check if the unit has an upcoming booking starting today
-        const upcomingBooking = bookingData.find(booking =>
+        const upcomingBooking = bookingData.find((booking: any) =>
           booking.unit_id === unit.id &&
           booking.check_in === today
         );
 
         // Check if the unit has a departing booking today
-        const departingBooking = bookingData.find(booking =>
+        const departingBooking = bookingData.find((booking: any) =>
           booking.unit_id === unit.id &&
           booking.check_out === today
         );
@@ -297,6 +316,9 @@ export async function getReservationsPageData(): Promise<ReservationsPageData> {
       reservations: 0,
     }));
   }
+
+  console.log("DEBUG: Fetched units count:", units.length);
+  console.log("DEBUG: Sample unit:", units.length > 0 ? units[0] : "No units found");
 
   return {
     reservations,

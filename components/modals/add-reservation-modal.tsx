@@ -75,7 +75,7 @@ export function AddReservationModal({
     paid: "0",
   })
 
-  const availableUnits = units.filter((u) => u.status === "vacant" || u.status === "arrival-today")
+  const availableUnits = units?.filter((u) => u.status === "vacant" || u.status === "arrival-today") || []
 
   const nights = useMemo(() => {
     if (formData.checkIn && formData.checkOut) {
@@ -164,11 +164,17 @@ export function AddReservationModal({
                   <SelectValue placeholder="اختر الوحدة" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableUnits.map((unit) => (
-                    <SelectItem key={unit.id} value={unit.id}>
-                      {unit.number} - {unit.name}
+                  {availableUnits.length > 0 ? (
+                    availableUnits.map((unit) => (
+                      <SelectItem key={unit.id} value={unit.id}>
+                        {unit.number} - {unit.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="" disabled>
+                      لا توجد وحدات متاحة
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
             </div>
