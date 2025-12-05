@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate that source type is one of the allowed values
-    const allowedSourceTypes = ['creditcard', 'card', 'applepay', 'googlepay', 'samsungpay', 'stcpay', 'stcdcb', 'token', 'urpay'];
+    // For redirect-based checkout, we may need to allow 'url' type which doesn't require card details
+    const allowedSourceTypes = ['creditcard', 'card', 'applepay', 'googlepay', 'samsungpay', 'stcpay', 'stcdcb', 'token', 'urpay', 'url'];
     if (!allowedSourceTypes.includes(source.type)) {
       return NextResponse.json(
         { error: `Invalid source type: ${source.type}. Allowed types are: ${allowedSourceTypes.join(', ')}` },
