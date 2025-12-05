@@ -108,7 +108,7 @@ export function MoyasarPayment({ amount, currency = "SAR", onSuccess, onError, b
           amount: amount,
           currency: currency,
           source: {
-            type: "card", // Changed from "creditcard" to "card" to match Moyasar's expected type
+            type: "creditcard",
             number: cardNumber.replace(/\s/g, ""),
             cvc: cvc,
             month: parseInt(expiryMonth),

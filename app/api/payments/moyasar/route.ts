@@ -5,10 +5,14 @@ import { createPayment, getPayment, processWebhook } from '@/lib/moyasar';
 
 export async function POST(request: NextRequest) {
   try {
-    const { amount, currency, source, description, metadata, callback_url, return_url, installments } = await request.json();
+    const body = await request.json();
+    console.log("RECEIVED PAYLOAD FROM FRONTEND:", JSON.stringify(body, null, 2));
+
+    const { amount, currency, source, description, metadata, callback_url, return_url, installments } = body;
 
     // Validate required fields
     if (!amount || !source) {
+      console.error("Missing required fields. Received:", { amount, source });
       return NextResponse.json(
         { error: 'Amount and source are required' },
         { status: 400 }

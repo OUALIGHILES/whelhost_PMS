@@ -177,6 +177,38 @@ export async function createPayment(paymentData: PaymentRequest): Promise<Paymen
     console.log(`Using credentials starting with: ${MOYASAR_CONFIG.secretKey?.substring(0, 10) || 'NOT_SET'}...`);
     console.log(`Environment: ${process.env.NODE_ENV}, Using API: ${MOYASAR_CONFIG.apiUrl}`);
 
+    // Diagnostic logging for the payload being sent to Moyasar
+    const payload = {
+      amount: Math.round(paymentData.amount * 100), // Convert to smallest currency unit (fils for SAR)
+      currency: paymentData.currency,
+      source: {
+        type: paymentData.source.type,
+        // Conditionally include only relevant fields based on source type
+        ...(paymentData.source.type === 'creditcard' && {
+          number: (paymentData.source as CreditCardSource).number,
+          cvc: (paymentData.source as CreditCardSource).cvc,
+          month: (paymentData.source as CreditCardSource).month,
+          year: (paymentData.source as CreditCardSource).year,
+          holder_name: (paymentData.source as CreditCardSource).holder_name,
+        }),
+        ...(paymentData.source.type === 'stcpay' && {
+          phone: (paymentData.source as STCPaySource).phone,
+        }),
+      },
+      description: paymentData.description,
+      metadata: {
+        ...paymentData.metadata || {},
+        request_source: 'hotel_reservation_app',
+        environment: process.env.NODE_ENV || 'unknown',
+      },
+      callback_url: paymentData.callback_url,
+      return_url: paymentData.return_url,
+      supported_networks: paymentData.supported_networks || MOYASAR_CONFIG.supportedNetworks,
+      installments: paymentData.installments || MOYASAR_CONFIG.form.defaultInstallmentPlan,
+    };
+
+    console.log("PAYLOAD SENT TO MOYASAR:", JSON.stringify(payload, null, 2));
+
     // Create an AbortController for timeout handling
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), MOYASAR_CONFIG.timeouts.connection); // Timeout from config
@@ -184,34 +216,7 @@ export async function createPayment(paymentData: PaymentRequest): Promise<Paymen
     response = await fetch(`${MOYASAR_CONFIG.apiUrl}payments`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({
-        amount: Math.round(paymentData.amount * 100), // Convert to smallest currency unit (fils for SAR)
-        currency: paymentData.currency,
-        source: {
-          type: paymentData.source.type,
-          // Conditionally include only relevant fields based on source type
-          ...(paymentData.source.type === 'creditcard' && {
-            number: (paymentData.source as CreditCardSource).number,
-            cvc: (paymentData.source as CreditCardSource).cvc,
-            month: (paymentData.source as CreditCardSource).month,
-            year: (paymentData.source as CreditCardSource).year,
-            holder_name: (paymentData.source as CreditCardSource).holder_name,
-          }),
-          ...(paymentData.source.type === 'stcpay' && {
-            phone: (paymentData.source as STCPaySource).phone,
-          }),
-        },
-        description: paymentData.description,
-        metadata: {
-          ...paymentData.metadata || {},
-          request_source: 'hotel_reservation_app',
-          environment: process.env.NODE_ENV || 'unknown',
-        },
-        callback_url: paymentData.callback_url,
-        return_url: paymentData.return_url,
-        supported_networks: paymentData.supported_networks || MOYASAR_CONFIG.supportedNetworks,
-        installments: paymentData.installments || MOYASAR_CONFIG.form.defaultInstallmentPlan,
-      }),
+      body: JSON.stringify(payload),
       signal: controller.signal // Add timeout signal
     });
 
