@@ -1,5 +1,4 @@
-"use client"
-
+import { requireAuth } from "@/lib/auth";
 import { useState } from "react"
 import { usePMSStore, type Task } from "@/lib/store"
 import { Button } from "@/components/ui/button"
@@ -14,7 +13,17 @@ import { Plus, Search, CheckCircle2, Circle, Clock, Trash2, GripVertical } from 
 import { cn } from "@/lib/utils"
 import { MainLayout } from "@/components/main-layout"
 
-export default function TasksPage() {
+export default async function TasksPage() {
+  await requireAuth();
+
+  return (
+    <MainLayout>
+      <TasksPageClient />
+    </MainLayout>
+  )
+}
+
+function TasksPageClient() {
   const { tasks, units, addTask, updateTask, deleteTask } = usePMSStore()
   const [search, setSearch] = useState("")
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -129,7 +138,7 @@ export default function TasksPage() {
   )
 
   return (
-    <MainLayout>
+    <>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -300,6 +309,6 @@ export default function TasksPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </MainLayout>
+    </>
   )
 }

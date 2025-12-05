@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -13,7 +13,6 @@ import {
   Receipt,
   Link2,
   Settings,
-  LogOut,
   ChevronLeft,
   ChevronRight,
   Home,
@@ -25,6 +24,20 @@ import {
   Wallet,
 } from "lucide-react"
 import { useState } from "react"
+import { UserProfileSection } from "@/components/user-profile-section"
+
+interface User {
+  id: string;
+  email: string | null;
+  user_metadata?: {
+    full_name?: string;
+    role?: string;
+  };
+}
+
+interface SidebarProps {
+  user?: User | null;
+}
 
 const navigation = [
   { name: "لوحة المعلومات", href: "/dashboard", icon: LayoutDashboard },
@@ -45,7 +58,7 @@ const navigation = [
   { name: "الإعدادات", href: "/dashboard/settings", icon: Settings },
 ]
 
-export function Sidebar() {
+export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
 
@@ -103,20 +116,12 @@ export function Sidebar() {
 
         {/* User Section */}
         <div className="border-t border-sidebar-border p-4">
-          <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-              <span className="text-sm font-bold text-primary">أح</span>
-            </div>
-            {!collapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">أحمد محمد</p>
-                <p className="text-xs text-muted-foreground truncate">مدير النظام</p>
+          <div className={cn(collapsed && "justify-center")}>
+            {!collapsed && <UserProfileSection initialUser={user} />}
+            {collapsed && (
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mx-auto">
+                <span className="text-sm font-bold text-primary">U</span>
               </div>
-            )}
-            {!collapsed && (
-              <button className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors">
-                <LogOut className="w-4 h-4 text-muted-foreground" />
-              </button>
             )}
           </div>
         </div>

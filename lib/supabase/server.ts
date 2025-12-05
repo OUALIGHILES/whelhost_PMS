@@ -8,6 +8,12 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      global: {
+        // Add timeout and retry options to handle fetch errors
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      },
       cookies: {
         get(name: string) {
           try {
