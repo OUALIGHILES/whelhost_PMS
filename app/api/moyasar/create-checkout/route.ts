@@ -11,7 +11,8 @@ export async function POST(request: NextRequest) {
       description = 'Hotel Booking Payment',
       metadata = {},
       callback_url,
-      cancel_url // Added cancel_url as per your requirements
+      cancel_url, // Added cancel_url as per your requirements
+      source = { type: "creditcard" } // Use the source object from the request, defaulting to creditcard
     } = body;
 
     // Validate required fields
@@ -79,9 +80,7 @@ export async function POST(request: NextRequest) {
           amount: Math.round(amount * 100), // Convert to smallest currency unit (e.g., fils for SAR)
           currency,
           description,
-          source: {
-            type: "creditcard" // Using creditcard source type for redirect checkout
-          },
+          source, // Use the source object directly from the request
           callback_url: callback_url || `${process.env.NEXT_PUBLIC_SITE_URL}/api/moyasar/webhook`,
           cancel_url: cancel_url || `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
           metadata: {
