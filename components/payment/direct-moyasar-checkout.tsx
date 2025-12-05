@@ -52,6 +52,9 @@ export function DirectMoyasarCheckout({
           amount,
           currency,
           description,
+          source: {
+            type: "url"  // Use 'url' type for redirect-based checkout without card details
+          },
           metadata: {
             booking_id: bookingId,
             guest_name: guestName,
