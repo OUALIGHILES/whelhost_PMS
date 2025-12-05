@@ -5,30 +5,46 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Drop all existing triggers and functions first
+-- First, drop the trigger on auth.users that references our function
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;
-DROP TRIGGER IF EXISTS update_hotels_updated_at ON public.hotels;
-DROP TRIGGER IF EXISTS update_room_types_updated_at ON public.room_types;
-DROP TRIGGER IF EXISTS update_units_updated_at ON public.units;
-DROP TRIGGER IF EXISTS update_bookings_updated_at ON public.bookings;
-DROP TRIGGER IF EXISTS update_invoices_updated_at ON public.invoices;
-DROP TRIGGER IF EXISTS update_tasks_updated_at ON public.tasks;
-DROP TRIGGER IF EXISTS update_smart_locks_updated_at ON public.smart_locks;
-DROP TRIGGER IF EXISTS update_channels_updated_at ON public.channels;
-DROP TRIGGER IF EXISTS update_subscriptions_updated_at ON public.subscriptions;
-DROP TRIGGER IF EXISTS update_unit_status_on_booking ON public.bookings;
-DROP TRIGGER IF EXISTS update_booking_paid_amount_on_insert ON public.payments;
-DROP TRIGGER IF EXISTS update_booking_paid_amount_on_update ON public.payments;
-DROP TRIGGER IF EXISTS update_booking_paid_amount_on_delete ON public.payments;
 
--- Drop functions
-DROP FUNCTION IF EXISTS public.handle_new_user();
-DROP FUNCTION IF EXISTS public.update_updated_at_column();
-DROP FUNCTION IF EXISTS public.generate_invoice_number(UUID);
-DROP FUNCTION IF EXISTS public.update_unit_status();
-DROP FUNCTION IF EXISTS public.update_booking_paid_amount(UUID);
-DROP FUNCTION IF EXISTS public.update_booking_paid_amount_on_payment_change();
+-- Drop triggers only if they exist (on our tables)
+DO $$
+BEGIN
+  DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;
+  DROP TRIGGER IF EXISTS update_hotels_updated_at ON public.hotels;
+  DROP TRIGGER IF EXISTS update_room_types_updated_at ON public.room_types;
+  DROP TRIGGER IF EXISTS update_units_updated_at ON public.units;
+  DROP TRIGGER IF EXISTS update_bookings_updated_at ON public.bookings;
+  DROP TRIGGER IF EXISTS update_invoices_updated_at ON public.invoices;
+  DROP TRIGGER IF EXISTS update_tasks_updated_at ON public.tasks;
+  DROP TRIGGER IF EXISTS update_smart_locks_updated_at ON public.smart_locks;
+  DROP TRIGGER IF EXISTS update_channels_updated_at ON public.channels;
+  DROP TRIGGER IF EXISTS update_subscriptions_updated_at ON public.subscriptions;
+  DROP TRIGGER IF EXISTS update_unit_status_on_booking ON public.bookings;
+  DROP TRIGGER IF EXISTS update_booking_paid_amount_on_insert ON public.payments;
+  DROP TRIGGER IF EXISTS update_booking_paid_amount_on_update ON public.payments;
+  DROP TRIGGER IF EXISTS update_booking_paid_amount_on_delete ON public.payments;
+EXCEPTION
+  WHEN undefined_table OR undefined_object THEN
+    -- Ignore errors if tables don't exist yet
+    NULL;
+END $$;
+
+-- Drop functions only if they exist
+DO $$
+BEGIN
+  DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
+  DROP FUNCTION IF EXISTS public.update_updated_at_column() CASCADE;
+  DROP FUNCTION IF EXISTS public.generate_invoice_number(UUID) CASCADE;
+  DROP FUNCTION IF EXISTS public.update_unit_status() CASCADE;
+  DROP FUNCTION IF EXISTS public.update_booking_paid_amount(UUID) CASCADE;
+  DROP FUNCTION IF EXISTS public.update_booking_paid_amount_on_payment_change() CASCADE;
+EXCEPTION
+  WHEN undefined_function THEN
+    -- Ignore if function doesn't exist
+    NULL;
+END $$;
 
 -- Drop all existing tables in the correct order to avoid foreign key violations
 DROP TABLE IF EXISTS webhook_logs CASCADE;
