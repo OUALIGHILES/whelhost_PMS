@@ -6,12 +6,12 @@ import { ArrowLeft, Shield, CreditCard, Smartphone, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface CheckoutPageProps {
-  searchParams: Promise<{ plan?: string; payment_method?: string }>
+  searchParams: Promise<{ plan?: string; package?: string; payment_method?: string }>
 }
 
 export default async function CheckoutPage({ searchParams }: CheckoutPageProps) {
   const params = await searchParams
-  const planId = params.plan as PlanId | undefined
+  const planId = (params.plan || params.package) as PlanId | undefined
   const paymentMethod = params.payment_method || 'creditcard' // Default to credit card
 
   if (!planId || !PLANS[planId]) {

@@ -106,7 +106,7 @@ export default function PackagesPage() {
                       : 'bg-[#494C4F] hover:bg-[#5a5e62] text-[#EBEAE6] px-8'
                   }`}
                 >
-                  <Link href={`/packages/${pkg.id}`}>
+                  <Link href={`/checkout?plan=${pkg.id}`}>
                     <span>الإشتراك</span>
                     <svg
                       className="w-4 h-4 mr-2"
