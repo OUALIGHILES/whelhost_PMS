@@ -1,6 +1,6 @@
 "use server";
 
-import { createClientSafe as createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth";
 
 // Define types for different settings
