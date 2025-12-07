@@ -45,7 +45,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useState, useEffect } from 'react';
 import { PublicUnitsDisplayClient } from '@/components/public-units-display-client';
-import { useUser } from '@/lib/hooks/use-user';
+import { useAuth } from '@/components/auth-provider';
+import { createClient } from '@/lib/supabase/client';
 
 // Function to get initial language from URL or localStorage
 const getInitialLanguage = () => {
@@ -258,7 +259,33 @@ const renderStars = (rating: number) => {
 };
 
 export default function HomePage() {
-  const { user, profile: userProfile } = useUser();
+  const { user } = useAuth();
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userLoading, setUserLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      const fetchProfile = async () => {
+        try {
+          const supabase = createClient();
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .single();
+
+          setUserProfile(profile);
+        } catch (error) {
+          console.error("Error fetching profile:", error);
+        } finally {
+          setUserLoading(false);
+        }
+      };
+      fetchProfile();
+    } else {
+      setUserLoading(false);
+    }
+  }, [user]);
   const [language, setLanguage] = useState<'en' | 'ar'>('en');
   const [dir, setDir] = useState<'ltr' | 'rtl'>('ltr');
 
@@ -495,7 +522,7 @@ export default function HomePage() {
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard" className="flex items-center gap-2 text-[#EBEAE6]">
                         <Home className="h-4 w-4" />
-                        <span>{language === 'ar' ? 'لوحة التحكم' : 'Dashboard'}</span>
+                        <span>{language === 'ar' ? 'الصفحة الرئيسية للإدارة' : 'Admin Home'}</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-[#494C4F]" />
@@ -557,7 +584,7 @@ export default function HomePage() {
                     // User is logged in - show profile options
                     <>
                       <Button variant="outline" asChild className="rounded-lg bg-transparent border-amber-800/30 text-[#EBEAE6] hover:bg-[#494C4F]">
-                        <Link href="/dashboard">{language === 'ar' ? 'لوحة التحكم' : 'Dashboard'}</Link>
+                        <Link href="/dashboard">{language === 'ar' ? 'الصفحة الرئيسية للإدارة' : 'Admin Home'}</Link>
                       </Button>
 
                       {/* Profile Options in Mobile */}

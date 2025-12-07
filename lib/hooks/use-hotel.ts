@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { Hotel } from "@/lib/types"
-import { useUser } from "./use-user"
+import { useAuth } from "@/components/auth-provider"
 
 export function useHotel() {
-  const { user } = useUser()
+  const { user } = useAuth()
   const [hotel, setHotel] = useState<Hotel | null>(null)
   const [loading, setLoading] = useState(true)
 

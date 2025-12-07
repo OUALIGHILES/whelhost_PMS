@@ -35,7 +35,7 @@ export function Header() {
           className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors text-sm font-medium"
         >
           <Building2 className="w-4 h-4" />
-          <span>الرجوع إلى الموقع</span>
+          <span>العودة إلى الرئيسية</span>
         </Link>
       </div>
 

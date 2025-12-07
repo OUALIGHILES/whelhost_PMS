@@ -20,8 +20,7 @@ export async function updateSession(request: NextRequest) {
         cookies: {
           get(name: string) {
             try {
-              const cookie = request.cookies.get(name);
-              return cookie ? cookie.value : undefined;
+              return request.cookies.get(name)?.value;
             } catch (error) {
               console.warn(`Error getting cookie ${name} in middleware:`, error);
               return undefined;
@@ -35,15 +34,24 @@ export async function updateSession(request: NextRequest) {
               return [];
             }
           },
-          setAll(cookiesToSet) {
+          set(name: string, value: string, options: any) {
             try {
-              cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
               supabaseResponse = NextResponse.next({
                 request,
               });
-              cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options));
+              supabaseResponse.cookies.set(name, value, options);
             } catch (error) {
-              console.warn('Error setting cookies in middleware:', error);
+              console.warn('Error setting cookie in middleware:', error);
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              supabaseResponse = NextResponse.next({
+                request,
+              });
+              supabaseResponse.cookies.set(name, "", { ...options, maxAge: -1 });
+            } catch (error) {
+              console.warn('Error removing cookie in middleware:', error);
             }
           },
         },

@@ -9,22 +9,31 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = useUser();
+  const { user, profile, loading } = useUser();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    // If not authenticated, redirect to home
-    if (!user) {
-      router.push('/');
-      return;
+    // Wait for auth state to load
+    if (!loading) {
+      // If not authenticated, redirect to home
+      if (!user) {
+        router.push('/');
+        return;
+      }
+
+      // Check if user has premium/is_premium status
+      if (profile && !profile.is_premium) {
+        router.push('/packages');
+        return;
+      }
+
+      setIsChecking(false);
     }
+  }, [user, profile, loading, router]);
 
-    setIsLoading(false);
-  }, [user, router]);
-
-  // Show nothing while checking authentication
-  if (isLoading || !user) {
+  // Show nothing while checking authentication/subscription
+  if (isChecking || loading || !user || (profile && !profile.is_premium)) {
     return (
       <div className="min-h-screen bg-[#1E2228] flex items-center justify-center">
         <div className="text-[#EBEAE6]">Loading...</div>
