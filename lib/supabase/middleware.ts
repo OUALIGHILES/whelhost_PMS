@@ -20,20 +20,31 @@ export async function updateSession(request: NextRequest) {
         cookies: {
           get(name: string) {
             try {
-              return request.cookies.get(name)?.value
-            } catch {
-              return undefined
+              const cookie = request.cookies.get(name);
+              return cookie ? cookie.value : undefined;
+            } catch (error) {
+              console.warn(`Error getting cookie ${name} in middleware:`, error);
+              return undefined;
             }
           },
           getAll() {
-            return request.cookies.getAll()
+            try {
+              return request.cookies.getAll();
+            } catch (error) {
+              console.warn('Error getting all cookies in middleware:', error);
+              return [];
+            }
           },
           setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-            supabaseResponse = NextResponse.next({
-              request,
-            })
-            cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
+            try {
+              cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+              supabaseResponse = NextResponse.next({
+                request,
+              });
+              cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options));
+            } catch (error) {
+              console.warn('Error setting cookies in middleware:', error);
+            }
           },
         },
       },
@@ -77,7 +88,7 @@ export async function updateSession(request: NextRequest) {
           return supabaseResponse;
         }
 
-        // Check if user has premium access for PMS features
+        // Check if user has premium access
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("is_premium, premium_expires_at")
@@ -92,11 +103,12 @@ export async function updateSession(request: NextRequest) {
           const isPremiumExpired = profile?.premium_expires_at ? new Date(profile.premium_expires_at) < new Date() : true
 
           if (!profile?.is_premium || isPremiumExpired) {
-            // For non-premium users, we could either:
-            // 1. Allow basic dashboard access but restrict premium features at UI level
-            // 2. Redirect to upgrade page (current behavior)
-            // For now, let's allow access to dashboard but let the UI handle premium restrictions
-            console.log("Non-premium user accessing dashboard - check UI for feature restrictions")
+            // Non-premium users should be redirected to packages page
+            const url = request.nextUrl.clone()
+            url.pathname = "/packages"
+            return NextResponse.redirect(url)
+          } else {
+            console.log("Premium user accessing dashboard - all features available")
           }
         }
       } catch (profileFetchError) {

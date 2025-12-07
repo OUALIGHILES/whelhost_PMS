@@ -43,19 +43,46 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PublicUnitsDisplayClient } from '@/components/public-units-display-client';
 import { useUser } from '@/lib/hooks/use-user';
 
-// Navigation menu items in English
-const navigation = [
-  { name: 'الرئيسية', href: '/' },
-  { name: 'المدن الشهيرة', href: '#cities' },
-  { name: 'العروض', href: '#offers' },
-  { name: 'الباقات', href: '/packages' },
-  { name: 'الإيجارات الشهرية', href: '#monthly' },
-  { name: 'اتصل بنا', href: '#contact' },
-];
+// Function to get initial language from URL or localStorage
+const getInitialLanguage = () => {
+  if (typeof window !== 'undefined') {
+    const urlParams = new URLSearchParams(window.location.search);
+    const langFromUrl = urlParams.get('lang');
+    if (langFromUrl === 'ar' || langFromUrl === 'en') {
+      return langFromUrl;
+    }
+
+    const savedLang = localStorage.getItem('language');
+    if (savedLang === 'ar' || savedLang === 'en') {
+      return savedLang;
+    }
+  }
+  return 'en'; // default language
+};
+
+// Navigation menu items in both languages
+const navigation = {
+  en: [
+    { name: 'Home', href: '/' },
+    { name: 'Popular Cities', href: '#cities' },
+    { name: 'Deals', href: '#offers' },
+    { name: 'Packages', href: '/packages' },
+    { name: 'Monthly Rentals', href: '#monthly' },
+    { name: 'Contact', href: '#contact' },
+  ],
+  ar: [
+    { name: 'الرئيسية', href: '/' },
+    { name: 'المدن الشهيرة', href: '#cities' },
+    { name: 'العروض', href: '#offers' },
+    { name: 'الباقات', href: '/packages' },
+    { name: 'الإيجارات الشهرية', href: '#monthly' },
+    { name: 'اتصل بنا', href: '#contact' },
+  ]
+};
 
 // Popular Saudi Arabian cities data
 const popularCities = [
@@ -232,12 +259,20 @@ const renderStars = (rating: number) => {
 
 export default function HomePage() {
   const { user, profile: userProfile } = useUser();
+  const [language, setLanguage] = useState<'en' | 'ar'>('en');
+  const [dir, setDir] = useState<'ltr' | 'rtl'>('ltr');
 
   // State for search form
   const [destination, setDestination] = useState('');
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [roomType, setRoomType] = useState('');
+
+  useEffect(() => {
+    const initialLang = getInitialLanguage();
+    setLanguage(initialLang as 'en' | 'ar');
+    setDir(initialLang === 'ar' ? 'rtl' : 'ltr');
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -247,27 +282,155 @@ export default function HomePage() {
 
   // Function to toggle language
   const toggleLanguage = () => {
-    if (window.location.pathname.startsWith('/ar')) {
-      window.location.href = '/';
-    } else {
-      window.location.href = '/ar';
+    const newLang = language === 'en' ? 'ar' : 'en';
+    setLanguage(newLang);
+    setDir(newLang === 'ar' ? 'rtl' : 'ltr');
+    localStorage.setItem('language', newLang);
+  };
+
+  // Get navigation based on current language
+  const currentNavigation = navigation[language];
+
+  // Content based on language
+  const content = {
+    en: {
+      luxurySystem: 'Luxury Hotel Management System',
+      hospitality: 'Exceptional Hospitality',
+      meets: 'Meets',
+      ultimateComfort: 'Ultimate Comfort',
+      propertyRental: 'Premium property rental service in Saudi Arabia, offering unique experiences for your guests',
+      destinationLabel: 'Destination',
+      destinationPlaceholder: 'City or Area',
+      checkInLabel: 'Check-in',
+      checkOutLabel: 'Check-out',
+      placeTypeLabel: 'Place Type',
+      all: 'All',
+      apartment: 'Apartment',
+      studio: 'Studio',
+      room: 'Room',
+      villa: 'Villa',
+      search: 'Search',
+      stars: '5 Stars',
+      trusted: 'Trusted by 500+ Hotels',
+      support: '24/7 Support',
+      scrollDown: 'Scroll down',
+      popularCities: 'Popular Cities',
+      featuredDestinations: 'Favorite Destinations',
+      discover: 'Discover the best accommodations in Saudi Arabia\'s cities',
+      dailyDeals: 'Daily Deals',
+      amazingDeals: 'Amazing Deals',
+      discoverDeals: 'Discover the best deals available today',
+      packages: 'Packages',
+      packageSubtitle: 'Choose the plan that suits your needs and start managing your hotel efficiently',
+      selfCheckin: 'Self Check-in',
+      convenientPlaces: 'Convenient places with self check-in system',
+      monthlyRentals: 'Monthly Rentals',
+      perfectPlace: 'Find your perfect place for monthly stays',
+      premiumAmenities: 'Premium Amenities',
+      amenitiesForPerfectStay: 'All the amenities you need for a perfect stay',
+      guestReviews: 'Guest Reviews',
+      whatGuestsSay: 'What Our Guests Say',
+      realExperiences: 'Real experiences from our valued customers',
+      contactUs: 'Contact Us',
+      getInTouch: 'Get In Touch',
+      haveQuestions: 'Have questions? We\'re here to help 24/7',
+      contactInfo: 'Contact Information',
+      phone: 'Phone',
+      email: 'Email',
+      sendUsMessage: 'Send Us a Message',
+      nameLabel: 'Name',
+      emailLabel: 'Email',
+      messageLabel: 'Message',
+      sendMessage: 'Send Message',
+      about: 'About',
+      terms: 'Terms',
+      privacy: 'Privacy',
+      home: 'Home',
+      popularCitiesNav: 'Popular Cities',
+      deals: 'Deals',
+      packagesNav: 'Packages',
+      monthlyRentalsNav: 'Monthly Rentals',
+      contact: 'Contact',
+      switchLanguage: 'Switch Language'
+    },
+    ar: {
+      luxurySystem: 'نظام إدارة الفنادق الفاخرة',
+      hospitality: 'ضيافة استثنائية',
+      meets: 'تلتقي',
+      ultimateComfort: 'بأعلى مستويات الراحة',
+      propertyRental: 'خدمة تأجير ممتلكات سكنية متميزة في المملكة العربية السعودية تقدم تجربة فريدة لضيوفك',
+      destinationLabel: 'الوجهة',
+      destinationPlaceholder: 'المدينة أو المنطقة',
+      checkInLabel: 'تاريخ الوصول',
+      checkOutLabel: 'تاريخ المغادرة',
+      placeTypeLabel: 'نوع المكان',
+      all: 'الكل',
+      apartment: 'شقة',
+      studio: 'استوديو',
+      room: 'غرفة',
+      villa: 'فيلا',
+      search: 'بحث',
+      stars: '5 نجوم',
+      trusted: 'م Trusted by 500+ Hotels',
+      support: '24/7 دعم',
+      scrollDown: 'اسحب للأسفل',
+      popularCities: 'المدن الشهيرة',
+      featuredDestinations: 'وجهات مميزة',
+      discover: 'اكتشف أفضل أماكن الإقامة في مدن المملكة العربية السعودية',
+      dailyDeals: 'العروض اليومية',
+      amazingDeals: 'صفقات مذهلة',
+      discoverDeals: 'اكتشف أفضل العروض المتوفرة اليوم',
+      packages: 'الباقات',
+      packageSubtitle: 'اختر الخطة التي تناسب احتياجاتك وابدأ في إدارة فندقك بكفاءة',
+      selfCheckin: 'دخول ذاتي',
+      convenientPlaces: 'أماكن مريحة مع نظام الدخول الذاتي',
+      monthlyRentals: 'الإيجارات الشهرية',
+      perfectPlace: 'ابحث عن المكان المثالي لفترات الإقامة الشهرية',
+      premiumAmenities: 'المرافق المميزة',
+      amenitiesForPerfectStay: 'جميع المرافق التي تحتاجها لإقامة مثالية',
+      guestReviews: 'مراجعات الضيوف',
+      whatGuestsSay: 'ما يقوله ضيوفنا',
+      realExperiences: 'تجارب حقيقية من عملائنا القيمين',
+      contactUs: 'اتصل بنا',
+      getInTouch: 'ابق على تواصل',
+      haveQuestions: 'هل لديك أسئلة؟ نحن هنا للمساعدة على مدار الساعة',
+      contactInfo: 'معلومات الاتصال',
+      phone: 'الهاتف',
+      email: 'البريد الإلكتروني',
+      sendUsMessage: 'أرسل لنا رسالة',
+      nameLabel: 'الاسم',
+      emailLabel: 'البريد الإلكتروني',
+      messageLabel: 'الرسالة',
+      sendMessage: 'إرسال الرسالة',
+      about: 'حول',
+      terms: 'الشروط',
+      privacy: 'الخصوصية',
+      home: 'الرئيسية',
+      popularCitiesNav: 'المدن الشهيرة',
+      deals: 'العروض',
+      packagesNav: 'الباقات',
+      monthlyRentalsNav: 'الإيجارات الشهرية',
+      contact: 'اتصل بنا',
+      switchLanguage: 'تبديل اللغة'
     }
   };
 
+  const t = content[language]; // t stands for translation
+
   return (
-    <div className="min-h-screen bg-[#1E2228]">
+    <div className="min-h-screen bg-[#1E2228]" dir={dir}>
       {/* Header */}
       <header className="fixed top-0 right-0 left-0 z-50 bg-[#1E2228]/80 backdrop-blur-md border-b border-[#494C4F]/30">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-[#EBEAE6]" />
-            <span className="font-serif text-2xl font-medium tracking-tight text-[#EBEAE6]">WhelHost</span>
+            <span className="font-serif text-2xl font-medium tracking-tight text-[#EBEAE6]">{language === 'ar' ? 'وهل هست' : 'WhelHost'}</span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden items-center gap-12 md:flex">
-            {navigation.map((item) => (
+            {currentNavigation.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
@@ -284,14 +447,14 @@ export default function HomePage() {
             <button
               onClick={toggleLanguage}
               className="p-2 rounded-full hover:bg-[#494C4F] transition-colors"
-              aria-label="Switch language"
+              aria-label={t.switchLanguage}
             >
               <Globe className="h-5 w-5 text-[#EBEAE6]" />
             </button>
 
             {/* User icons - cart and profile */}
             <div className="flex items-center gap-4">
-              <button className="p-2 rounded-full hover:bg-[#494C4F] transition-colors" aria-label="Cart">
+              <button className="p-2 rounded-full hover:bg-[#494C4F] transition-colors" aria-label={language === 'ar' ? 'السلة' : 'Cart'}>
                 <ShoppingCart className="h-5 w-5 text-[#EBEAE6]" />
               </button>
 
@@ -301,13 +464,13 @@ export default function HomePage() {
                   <DropdownMenuTrigger asChild>
                     <button
                       className="flex items-center gap-2 border rounded-full px-1 py-1.5 text-sm hover:bg-[#494C4F] transition-colors focus:outline-none"
-                      aria-label="Profile menu"
+                      aria-label={language === 'ar' ? 'قائمة الملف الشخصي' : 'Profile menu'}
                     >
                       <div className="h-8 w-8 rounded-full bg-[#494C4F] flex items-center justify-center overflow-hidden">
                         {userProfile?.avatar_url ? (
                           <img
                             src={userProfile.avatar_url}
-                            alt={userProfile.full_name || 'Profile'}
+                            alt={userProfile.full_name || (language === 'ar' ? 'الملف الشخصي' : 'Profile')}
                             className="h-full w-full object-cover"
                           />
                         ) : (
@@ -332,21 +495,21 @@ export default function HomePage() {
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard" className="flex items-center gap-2 text-[#EBEAE6]">
                         <Home className="h-4 w-4" />
-                        <span>Dashboard</span>
+                        <span>{language === 'ar' ? 'لوحة التحكم' : 'Dashboard'}</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-[#494C4F]" />
                     <DropdownMenuItem asChild>
                       <Link href="/profile" className="flex items-center gap-2 text-[#EBEAE6]">
                         <User className="h-4 w-4" />
-                        <span>Profile</span>
+                        <span>{language === 'ar' ? 'الملف الشخصي' : 'Profile'}</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-[#494C4F]" />
                     <DropdownMenuItem asChild>
                       <Link href="/logout" className="flex items-center gap-2 text-red-500">
                         <LogOut className="h-4 w-4" />
-                        <span>Logout</span>
+                        <span>{language === 'ar' ? 'تسجيل الخروج' : 'Logout'}</span>
                       </Link>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -355,10 +518,10 @@ export default function HomePage() {
                 // User is not logged in - show auth buttons
                 <>
                   <Button variant="ghost" size="sm" asChild className="text-[#EBEAE6] hover:text-[#EBEAE6]">
-                    <Link href="/login">Login</Link>
+                    <Link href="/login">{language === 'ar' ? 'تسجيل الدخول' : 'Login'}</Link>
                   </Button>
                   <Button size="sm" asChild className="rounded-lg bg-white hover:bg-gray-200 px-6 text-[#1E2228]">
-                    <Link href="/signup">Get Started</Link>
+                    <Link href="/signup">{language === 'ar' ? 'ابدأ الآن' : 'Get Started'}</Link>
                   </Button>
                 </>
               )}
@@ -374,7 +537,7 @@ export default function HomePage() {
             </SheetTrigger>
             <SheetContent side="left" className="w-80 bg-[#1E2228] text-[#EBEAE6] border-[#494C4F]">
               <nav className="mt-12 flex flex-col gap-6">
-                {navigation.map((item) => (
+                {currentNavigation.map((item) => (
                   <Link key={item.name} href={item.href} className="font-serif text-2xl font-medium text-[#EBEAE6]">
                     {item.name}
                   </Link>
@@ -386,7 +549,7 @@ export default function HomePage() {
                   className="flex items-center gap-2 font-serif text-xl text-[#EBEAE6]"
                 >
                   <Globe className="h-5 w-5" />
-                  Switch Language
+                  {t.switchLanguage}
                 </button>
 
                 <div className="mt-8 flex flex-col gap-4">
@@ -394,16 +557,16 @@ export default function HomePage() {
                     // User is logged in - show profile options
                     <>
                       <Button variant="outline" asChild className="rounded-lg bg-transparent border-amber-800/30 text-[#EBEAE6] hover:bg-[#494C4F]">
-                        <Link href="/dashboard">Dashboard</Link>
+                        <Link href="/dashboard">{language === 'ar' ? 'لوحة التحكم' : 'Dashboard'}</Link>
                       </Button>
 
                       {/* Profile Options in Mobile */}
                       <div className="flex flex-col gap-2">
                         <Button variant="outline" asChild className="justify-start rounded-lg bg-transparent border-amber-800/30 text-[#EBEAE6] hover:bg-[#494C4F]">
-                          <Link href="/profile">Profile</Link>
+                          <Link href="/profile">{language === 'ar' ? 'الملف الشخصي' : 'Profile'}</Link>
                         </Button>
                         <Button variant="outline" asChild className="justify-start rounded-lg bg-transparent border-red-700/30 text-red-600 hover:bg-[#494C4F]">
-                          <Link href="/logout">Logout</Link>
+                          <Link href="/logout">{language === 'ar' ? 'تسجيل الخروج' : 'Logout'}</Link>
                         </Button>
                       </div>
                     </>
@@ -411,10 +574,10 @@ export default function HomePage() {
                     // User is not logged in - show auth buttons
                     <>
                       <Button variant="outline" asChild className="rounded-lg bg-transparent border-[#494C4F] text-[#EBEAE6] hover:bg-[#494C4F]">
-                        <Link href="/login">Login</Link>
+                        <Link href="/login">{language === 'ar' ? 'تسجيل الدخول' : 'Login'}</Link>
                       </Button>
                       <Button asChild className="rounded-lg bg-white text-[#1E2228]">
-                        <Link href="/signup">Get Started</Link>
+                        <Link href="/signup">{language === 'ar' ? 'ابدأ الآن' : 'Get Started'}</Link>
                       </Button>
                     </>
                   )}
@@ -437,27 +600,27 @@ export default function HomePage() {
           <div className="mx-auto max-w-4xl text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-[#494C4F]/50 text-[#EBEAE6] text-sm font-medium">
               <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-              <span>Luxury Hotel Management System</span>
+              <span>{t.luxurySystem}</span>
             </div>
 
             <h1 className="font-serif text-5xl font-medium leading-tight tracking-tight sm:text-6xl lg:text-7xl text-[#EBEAE6]">
-              <span className="italic">Exceptional Hospitality</span> <span className="text-amber-500">Meets</span> <span className="italic">Ultimate Comfort</span>
+              <span className="italic">{t.hospitality}</span> <span className="text-amber-500">{t.meets}</span> <span className="italic">{t.ultimateComfort}</span>
             </h1>
 
             <p className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-[#494C4F]">
-              Premium property rental service in Saudi Arabia, offering unique experiences for your guests
+              {t.propertyRental}
             </p>
 
             {/* Search Form */}
             <div className="mt-12 max-w-4xl mx-auto bg-[#1E2228] p-6 rounded-2xl shadow-lg border border-[#494C4F]">
               <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-[#494C4F]">Destination</label>
+                  <label className="text-sm font-medium text-[#494C4F]">{t.destinationLabel}</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#494C4F]" />
                     <input
                       type="text"
-                      placeholder="City or Area"
+                      placeholder={t.destinationPlaceholder}
                       value={destination}
                       onChange={(e) => setDestination(e.target.value)}
                       className="w-full pl-10 pr-4 py-2 border border-[#494C4F] rounded-lg bg-[#1E2228] text-[#EBEAE6] focus:outline-none focus:ring-2 focus:ring-amber-600"
@@ -466,7 +629,7 @@ export default function HomePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-[#494C4F]">Check-in</label>
+                  <label className="text-sm font-medium text-[#494C4F]">{t.checkInLabel}</label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#494C4F]" />
                     <input
@@ -479,7 +642,7 @@ export default function HomePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-[#494C4F]">Check-out</label>
+                  <label className="text-sm font-medium text-[#494C4F]">{t.checkOutLabel}</label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#494C4F]" />
                     <input
@@ -492,24 +655,24 @@ export default function HomePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-[#494C4F]">Place Type</label>
+                  <label className="text-sm font-medium text-[#494C4F]">{t.placeTypeLabel}</label>
                   <select
                     value={roomType}
                     onChange={(e) => setRoomType(e.target.value)}
                     className="w-full px-4 py-2 border border-[#494C4F] rounded-lg bg-[#1E2228] text-[#EBEAE6] focus:outline-none focus:ring-2 focus:ring-amber-600"
                   >
-                    <option value="" className="bg-[#1E2228] text-[#EBEAE6]">All</option>
-                    <option value="apartment" className="bg-[#1E2228] text-[#EBEAE6]">Apartment</option>
-                    <option value="studio" className="bg-[#1E2228] text-[#EBEAE6]">Studio</option>
-                    <option value="room" className="bg-[#1E2228] text-[#EBEAE6]">Room</option>
-                    <option value="villa" className="bg-[#1E2228] text-[#EBEAE6]">Villa</option>
+                    <option value="" className="bg-[#1E2228] text-[#EBEAE6]">{t.all}</option>
+                    <option value="apartment" className="bg-[#1E2228] text-[#EBEAE6]">{t.apartment}</option>
+                    <option value="studio" className="bg-[#1E2228] text-[#EBEAE6]">{t.studio}</option>
+                    <option value="room" className="bg-[#1E2228] text-[#EBEAE6]">{t.room}</option>
+                    <option value="villa" className="bg-[#1E2228] text-[#EBEAE6]">{t.villa}</option>
                   </select>
                 </div>
 
                 <div className="flex items-end">
                   <Button type="submit" className="w-full bg-amber-800 hover:bg-amber-700 text-[#EBEAE6] py-2">
                     <Search className="h-4 w-4 ml-2" />
-                    Search
+                    {t.search}
                   </Button>
                 </div>
               </form>
@@ -518,12 +681,12 @@ export default function HomePage() {
             <div className="mt-8 flex items-center justify-center gap-8 text-sm text-[#494C4F]">
               <div className="flex items-center gap-1">
                 <Award className="h-4 w-4 text-amber-600" />
-                <span>5 Stars</span>
+                <span>{t.stars}</span>
               </div>
               <div className="h-2 w-px bg-[#494C4F]"></div>
-              <div>Trusted by 500+ Hotels</div>
+              <div>{t.trusted}</div>
               <div className="h-2 w-px bg-[#494C4F]"></div>
-              <div>24/7 Support</div>
+              <div>{t.support}</div>
             </div>
           </div>
         </div>
@@ -531,7 +694,7 @@ export default function HomePage() {
         {/* Scroll indicator */}
         <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-10">
           <div className="flex flex-col items-center gap-2">
-            <span className="text-xs uppercase tracking-widest text-[#494C4F]">Scroll down</span>
+            <span className="text-xs uppercase tracking-widest text-[#494C4F]">{t.scrollDown}</span>
             <div className="h-12 w-px bg-[#494C4F]" />
           </div>
         </div>

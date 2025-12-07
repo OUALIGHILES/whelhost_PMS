@@ -9,6 +9,7 @@ import { UnitStatusChartServer } from "@/components/charts/unit-status-chart-ser
 import { ReservationSourcesChart } from "@/components/charts/reservation-sources-chart-server"
 import { UnitStatusList } from "@/components/unit-status-list"
 import { Building2, CalendarPlus, CalendarCheck, Users, Banknote } from "lucide-react";
+import { redirect } from "next/navigation";
 
 interface Activity {
   id: string;
@@ -344,31 +345,6 @@ export default async function DashboardPage() {
   if (!profileError && profile) {
     const isPremiumExpired = profile.premium_expires_at ? new Date(profile.premium_expires_at) < new Date() : true;
     isPremium = profile.is_premium && !isPremiumExpired;
-  }
-
-  // Redirect to subscription page if user is not premium
-  if (!isPremium) {
-    return (
-      <MainLayout>
-        <div className="flex flex-col items-center justify-center min-h-[70vh] p-8">
-          <div className="text-center max-w-2xl">
-            <h2 className="text-2xl font-bold text-foreground mb-4">يجب الاشتراك ليمكنك إنشاء لوحة تحكم</h2>
-            <p className="text-muted-foreground mb-8">
-              للوصول إلى لوحة التحكم الكاملة مع جميع الميزات والإحصائيات، يرجى ترقية اشتراكك
-            </p>
-            <a
-              href="/packages"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
-            >
-              الاشتراك الآن
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </a>
-          </div>
-        </div>
-      </MainLayout>
-    );
   }
 
   let dashboardData: DashboardData | null = null;
